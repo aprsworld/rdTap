@@ -208,7 +208,12 @@ void main(void) {
 	for ( i=0 ; i<100 ; i++ ) {
 		restart_wdt();
 
-		fprintf(world,"# rdTap %s (%c%lu)\r\n",__DATE__,config.serial_prefix,config.serial_number);
+		fprintf(world,"# rdTap %s (%c%lu) i=%u (before interrupts)\r\n",
+			__DATE__,
+			config.serial_prefix,
+			config.serial_number,
+			i
+		);
 
 		output_high(LED_GREEN);
 		delay_ms(100);
@@ -217,26 +222,36 @@ void main(void) {
 	}
 
 	fprintf(world,"# enable_interrupts(GLOBAL)\r\n");
-
 	enable_interrupts(GLOBAL);
+	fprintf(world,"# done\r\n");
 
-
+	fprintf(world,"# write defaults\r\n");
 	write_default_param_file();
 	write_default_device_file();
+	fprintf(world,"# done\r\n");
 
+	fprintf(world,"# read paramaters\r\n");
 	read_param_file();
 	read_device_file();
+	fprintf(world,"# done\r\n");
 
 	fprintf(world,"# rdTap %s (%c%lu)\r\n",__DATE__,config.serial_prefix,config.serial_number);
 
+	fprintf(world,"# modbus_init()\r\n");
 	modbus_init();
-
+	fprintf(world,"# done\r\n");
 
 	for ( i=0 ; i<100 ; i++ ) {
 		restart_wdt();
 
-		fprintf(world,"# rdTap %s (%c%lu)\r\n",__DATE__,config.serial_prefix,config.serial_number);
+		fprintf(world,"# rdTap %s (%c%lu) i=%u (after interrupts)\r\n",
+			__DATE__,
+			config.serial_prefix,
+			config.serial_number,
+			i
+		);
 
+	
 		/* blink LED's quickly */
 		timers.led_on_green=10;
 		delay_ms(100);
@@ -244,6 +259,7 @@ void main(void) {
 		delay_ms(100);
 	}
 
+	fprintf(world,"# starting main() loop\r\n");
 
 	/* main loop */
 	for ( ; ; ) {
