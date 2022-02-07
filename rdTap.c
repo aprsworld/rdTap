@@ -21,7 +21,6 @@ typedef struct {
 	int8  factory_unlocked;
 
 	int8  led_on_green;
-	int8  led_on_red;
 } struct_timer;
 
 
@@ -66,42 +65,14 @@ struct_qbuff  qbuff;
 struct_query  query;
 struct_config config;
 
+#include "mcp3208_rdTap.c"
+#include "uart_sc16is740_rdTap.c"
 #include "param_rdTap.c"
 #include "paramDevice_rdTap.c"
 #include "modbus_int_uart_rdTap.c"
 #include "interrupt_rdTap.c"
 #include "live_rdTap.c"
 #include "queryHandler_rdTap.c"
-
-
-
-void init() {
-	setup_oscillator(OSC_8MHZ | OSC_INTRC);
-	setup_adc(ADC_OFF);
-	setup_adc_ports(NO_ANALOGS);
-
-//	setup_timer_2(T2_DIV_BY_4,49,1); // set 1 millisecond period with 8 MHz oscillator
-
-	setup_timer_4(T4_DIV_BY_16,77,16); 
-	enable_interrupts(INT_TIMER4);	
-
-	/* global structures */
-	timers.now_poll=1;
-	timers.world_timeout=255;
-	timers.factory_unlocked=0;
-	timers.led_on_green=0;
-	timers.led_on_red=0;
-
-	query_reset();
-
-	/* receive data from serial ports */
-	enable_interrupts(INT_RDA2);
-
-
-}
-
-
-
 
 
 void deviceQuery(void) {
@@ -175,8 +146,59 @@ void deviceQuery(void) {
 	timers.led_on_green=0;
 }
 
+void init() {
+	setup_oscillator(OSC_8MHZ || OSC_INTRC); 
+	setup_adc_ports(NO_ANALOGS);
+	setup_wdt(WDT_ON);
 
-/* this is started after the bootloader is done loading or times out */
+	/* 
+	Manually set ANCON0 to 0xff and ANCON1 to 0x1f for all digital
+	Otherwise set high bit of ANCON1 for VbGen enable, then remaining bits are AN12 ... AN8
+	ANCON1 AN7 ... AN0
+	set bit to make input digital
+	*/
+	/* AN7 AN6 AN5 AN4 AN3 AN2 AN1 AN0 */
+	ANCON0=0xff;
+	/* VbGen x x 12 11 10 9 8 */
+	ANCON1=0x1f;
+
+	setup_ccp1(CCP_OFF);
+	setup_ccp2(CCP_OFF);
+	setup_ccp3(CCP_OFF);
+	setup_ccp4(CCP_OFF);
+	setup_ccp5(CCP_OFF);
+
+	output_low(RS485_DE); /* shut off RS-485 transmitter */
+
+	setup_timer_4(T4_DIV_BY_16,77,16); 
+	enable_interrupts(INT_TIMER4);	
+
+	/* global structures initialized to 0, set something else below if needed */
+	timers.now_poll=1;
+	timers.world_timeout=255;
+	timers.factory_unlocked=0;
+	timers.led_on_green=0;
+
+	query_reset();
+
+	/* receive data from serial ports */
+	enable_interrupts(INT_RDA2);
+
+	/* initialize MCP3208 external ADCs */
+	mcp3208_init();
+
+
+	/* initialize SCI UART @ 19200 */
+	uart_init(6); /* 2=>57600 (tested, works) 6=>19200 */
+
+
+	delay_ms(14);
+
+
+
+
+}
+
 void main(void) {
 	/* normal device startup */
 	init();
@@ -189,21 +211,16 @@ void main(void) {
 	read_param_file();
 	read_device_file();
 
-	fprintf(world,"# rsTap.c (planetPrecision) %s (%c%lu)\r\n",__DATE__,config.serial_prefix,config.serial_number);
+	fprintf(world,"# rdTap %s (%c%lu)\r\n",__DATE__,config.serial_prefix,config.serial_number);
 
 	modbus_init();
 
 
 	/* blink LED's quickly */
-	timers.led_on_red=10;
-	delay_ms(100);
 	timers.led_on_green=10;
 	delay_ms(100);
-	timers.led_on_red=0;
 	timers.led_on_green=0;
 
-	output_low(TP2);
-	output_high(TP3);
 
 	/* main loop */
 	for ( ; ; ) {

@@ -134,7 +134,6 @@ exception query_self_write_register(int16 address, int16 value) {
 				timers.factory_unlocked=1;
 				/* green LED for 2 seconds */
 				timers.led_on_green=200;
-				timers.led_on_red=0;
 				break;
 #if DEBUG_ASCII
 	fprintf(world,"# factory unlocked\r\n");

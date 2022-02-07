@@ -327,15 +327,15 @@ const char modbus_auchCRCLo[] = {
 // Purpose:    Enable data reception
 // Inputs:     None
 // Outputs:    None
-void RCV_ON(void) {
+void rcv_on(void) {
 	// Clear RX buffer. Clear RDA interrupt flag. Clear overrun error flag.
-	while ( kbhit(MODBUS_SERIAL) ) {
+	while(kbhit(MODBUS_SERIAL)) {
 		fgetc(MODBUS_SERIAL);
 	}  
-
+	
 	clear_interrupt(INT_RDA);
-	output_low(MODBUS_SERIAL_RX_ENABLE);
-
+//	output_low(MODBUS_SERIAL_RX_ENABLE);
+	output_low(RS485_DE);
 	enable_interrupts(INT_RDA);
 }
 

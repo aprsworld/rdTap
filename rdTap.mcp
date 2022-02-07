@@ -53,8 +53,8 @@ file_009=no
 file_010=no
 file_011=no
 file_012=no
-file_013=no
-file_014=no
+file_013=yes
+file_014=yes
 [OTHER_FILES]
 file_000=no
 file_001=no

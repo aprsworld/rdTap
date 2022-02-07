@@ -19,7 +19,6 @@ void isr_10ms(void) {
 
 	if ( timers.world_timeout < 255 ) {
 		timers.world_timeout++;
-		output_toggle(TP1);
 	}
 
 	/* LEDs */
@@ -30,14 +29,6 @@ void isr_10ms(void) {
 		timers.led_on_green--;
 	}
 
-	if ( 0==timers.led_on_red ) {
-		output_low(LED_RED);
-	} else {
-		output_high(LED_RED);
-		timers.led_on_red--;
-	}
-
-
 }
 
 
@@ -47,18 +38,15 @@ void isr_10ms(void) {
 void isr_world(void) {
 	static int8 pre[5];
 
-	output_high(TP2);
-
 	if ( query.buff_ready ) {
 		/* throw out data received while processing previous query */
 		fgetc(world);
-		output_low(TP2);
 	}
 
 	/* timeout after 100 milliseconds */
 	if ( timers.world_timeout > 10 ) {
 		query.buff_pos=0;
-		output_toggle(LED_RED);
+//		output_toggle(LED_RED);
 	}
 	timers.world_timeout=0;
 
@@ -85,5 +73,4 @@ void isr_world(void) {
 			query.buff_ready=1;
 		}
 	}
-	output_low(TP2);
 }
