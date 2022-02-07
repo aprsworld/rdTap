@@ -239,13 +239,13 @@ void main(void) {
 	enable_interrupts(GLOBAL);
 
 //	fprintf(STREAM_WORLD,"# write default param file\r\n");
-//	write_default_param_file();
+	write_default_param_file();
 
 //	fprintf(STREAM_WORLD,"# write default device file\r\n");
-//	write_default_device_file();
+	write_default_device_file();
 
 //	fprintf(STREAM_WORLD,"# read paramaters\r\n");
-//	read_param_file();
+	read_param_file();
 	read_device_file();
 
 //	fprintf(STREAM_WORLD,"# modbus_init()\r\n");

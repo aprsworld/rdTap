@@ -6,7 +6,7 @@ void write_device_file() {
 	/* write the config structure */
 	crc = EEPROMDataWrite(DEVICE_ADDRESS,(void *)&device,sizeof(device));
 	/* write the CRC that was calculated on the structure */
-	write_program_eeprom(DEVICE_CRC_ADDRESS,crc);
+	write_eeprom(DEVICE_CRC_ADDRESS,crc);
 
 //	fprintf(STREAM_WORLD,"# write_device_file crc=%u\r\n",crc);
 }
@@ -35,9 +35,10 @@ void read_device_file() {
 
 	crc = EEPROMDataRead(DEVICE_ADDRESS,(void *)&device, sizeof(device)); 
 
-//	fprintf(STREAM_WORLD,"# read_device_file crc=%u\r\n",crc);
+	fprintf(STREAM_WORLD,"# read_device_file crc=%u\r\n",crc);
 
-	if ( crc != read_program_eeprom(DEVICE_CRC_ADDRESS) ) {
+	if ( crc != read_eeprom(DEVICE_CRC_ADDRESS) ) {
+		fprintf(STREAM_WORLD,"# read_device_file CRC mis-match. Writing new default!\r\n");
 		write_default_device_file();
 	}
 }

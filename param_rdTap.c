@@ -60,7 +60,8 @@ void read_param_file() {
 
 	crc = EEPROMDataRead(PARAM_ADDRESS,(void *)&config, sizeof(config)); 
 
-	if ( crc != read_program_eeprom(PARAM_CRC_ADDRESS) ) {
+	if ( crc != read_eeprom(PARAM_CRC_ADDRESS) ) {
+		fprintf(STREAM_WORLD,"# read_param_file CRC mis-match. Writing new default!\r\n");
 		write_default_param_file();
 	}
 }
