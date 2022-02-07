@@ -205,15 +205,8 @@ void main(void) {
 	/* normal device startup */
 	init();
 
-	for ( i=0 ; i<100 ; i++ ) {
+	for ( i=0 ; i<10 ; i++ ) {
 		restart_wdt();
-
-		fprintf(world,"# rdTap %s (%c%lu) i=%u (before interrupts)\r\n",
-			__DATE__,
-			config.serial_prefix,
-			config.serial_number,
-			i
-		);
 
 		output_high(LED_GREEN);
 		delay_ms(100);
@@ -221,45 +214,47 @@ void main(void) {
 		delay_ms(100);
 	}
 
-	fprintf(world,"# enable_interrupts(GLOBAL)\r\n");
+	fprintf(STREAM_WORLD,"# rdTap %s (%c%lu)\r\n",
+		__DATE__,
+		config.serial_prefix,
+		config.serial_number
+	);
+
+
+	fprintf(STREAM_WORLD,"# restart cause: ");
+	switch ( restart_cause ) {
+		case WDT_TIMEOUT:       fprintf(STREAM_WORLD,"WDT TIMEOUT"); break;
+		case MCLR_FROM_SLEEP:   fprintf(STREAM_WORLD,"MCLR FROM SLEEP"); break;
+		case MCLR_FROM_RUN:     fprintf(STREAM_WORLD,"MCLR FROM RUN"); break;
+		case NORMAL_POWER_UP:   fprintf(STREAM_WORLD,"NORMAL POWER UP"); break;
+		case BROWNOUT_RESTART:  fprintf(STREAM_WORLD,"BROWNOUT RESTART"); break;
+		case WDT_FROM_SLEEP:    fprintf(STREAM_WORLD,"WDT FROM SLEEP"); break;
+		case RESET_INSTRUCTION: fprintf(STREAM_WORLD,"RESET INSTRUCTION"); break;
+		default:                fprintf(STREAM_WORLD,"UNKNOWN!");
+	}
+	fprintf(STREAM_WORLD,"\r\n");
+
+
+//	fprintf(STREAM_WORLD,"# enable_interrupts(GLOBAL)\r\n");
 	enable_interrupts(GLOBAL);
-	fprintf(world,"# done\r\n");
 
-	fprintf(world,"# write defaults\r\n");
+//	fprintf(STREAM_WORLD,"# write default param file\r\n");
 	write_default_param_file();
-	write_default_device_file();
-	fprintf(world,"# done\r\n");
 
-	fprintf(world,"# read paramaters\r\n");
+//	fprintf(STREAM_WORLD,"# write default device file\r\n");
+	write_default_device_file();
+
+//	fprintf(STREAM_WORLD,"# read paramaters\r\n");
 	read_param_file();
 	read_device_file();
-	fprintf(world,"# done\r\n");
 
-	fprintf(world,"# rdTap %s (%c%lu)\r\n",__DATE__,config.serial_prefix,config.serial_number);
-
-	fprintf(world,"# modbus_init()\r\n");
+//	fprintf(STREAM_WORLD,"# modbus_init()\r\n");
 	modbus_init();
-	fprintf(world,"# done\r\n");
 
-	for ( i=0 ; i<100 ; i++ ) {
-		restart_wdt();
 
-		fprintf(world,"# rdTap %s (%c%lu) i=%u (after interrupts)\r\n",
-			__DATE__,
-			config.serial_prefix,
-			config.serial_number,
-			i
-		);
+	devicesDump();
 
-	
-		/* blink LED's quickly */
-		timers.led_on_green=10;
-		delay_ms(100);
-		timers.led_on_green=0;
-		delay_ms(100);
-	}
-
-	fprintf(world,"# starting main() loop\r\n");
+	fprintf(STREAM_WORLD,"# starting main() loop\r\n");
 
 	/* main loop */
 	for ( ; ; ) {
@@ -267,6 +262,7 @@ void main(void) {
 
 		if ( timers.now_poll ) {
 			timers.now_poll=0;
+			timers.led_on_green=50;
 			deviceQuery();
 		}
 
@@ -275,6 +271,8 @@ void main(void) {
 			query_reset();
 
 		}
+
+		fprintf(STREAM_WORLD,"*\r\n");
 	}
 }
 

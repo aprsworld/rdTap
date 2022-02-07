@@ -36,7 +36,7 @@ Parameters and devices are stored in 1024 byte EEPROM
 
 
 /* uart1 is for modbus and set in modbus_int_uart */
-#use rs232(UART2,stream=world, baud=57600, errors)	
+#use rs232(UART2,stream=STREAM_WORLD, baud=57600, errors)	
 
 
 #use standard_io(A)
@@ -133,4 +133,4 @@ Parameters and devices are stored in 1024 byte EEPROM
 #define DEV_SERIAL_19200 1
 
 
-#define DEV_MAX_N 64
+#define DEV_MAX_N 32

@@ -18,7 +18,7 @@ char EEPROMDataWrite( int16 address, int8 *data, int16 count ) {
 	char crc=0;
 
 	while ( count-- != 0 ) {
-		/* restart_wdt() */
+		restart_wdt();
 		crc = xor_crc(crc,*data);
 		write_eeprom( address++, *data++ );
 	}
@@ -41,13 +41,13 @@ void write_default_param_file() {
 	timers.led_on_green=150;
 //	fprintf(world,"# writing default parameters\r\n");
 
-//	config.serial_prefix='Z';
-//	config.serial_number=9875;
-	config.serial_prefix='A';
-	config.serial_number=4001;
+	config.serial_prefix='Z';
+	config.serial_number=9875;
 
 //	config.live_interval=60;
 	config.live_interval=10;
+
+
 
 	/* write them so next time we use from EEPROM */
 	write_param_file();

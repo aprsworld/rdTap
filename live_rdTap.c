@@ -56,12 +56,12 @@ void live_send(void) {
 
 	/* send buff, qbuff.rResult, CRC */
 	for ( i=0 ; i<sizeof(buff) ; i++ ) {
-		fputc(buff[i],world);
+		fputc(buff[i],STREAM_WORLD);
 	}	
 	for ( i=0 ; i<qbuff.rResultLength ; i++ ) {
-		fputc(qbuff.rResult[i],world);
+		fputc(qbuff.rResult[i],STREAM_WORLD);
 	}
-	fputc(make8(lCRC,1),world);
-	fputc(make8(lCRC,0),world);
+	fputc(make8(lCRC,1),STREAM_WORLD);
+	fputc(make8(lCRC,0),STREAM_WORLD);
 }
 

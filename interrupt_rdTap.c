@@ -40,7 +40,7 @@ void isr_world(void) {
 
 	if ( query.buff_ready ) {
 		/* throw out data received while processing previous query */
-		fgetc(world);
+		fgetc(STREAM_WORLD);
 	}
 
 	/* timeout after 100 milliseconds */
@@ -55,7 +55,7 @@ void isr_world(void) {
 		pre[1]=pre[2];
 		pre[2]=pre[3];
 		pre[3]=pre[4];
-		pre[4]=fgetc(world);
+		pre[4]=fgetc(STREAM_WORLD);
 
 		/* packet addressed to us */
 		if ( '#'==pre[0] && config.serial_prefix==pre[1] && config.serial_number==make16(pre[2],pre[3]) ) {
@@ -67,7 +67,7 @@ void isr_world(void) {
 			query.buff_pos=5;
 		}
 	} else {
-		query.buff[query.buff_pos++]=fgetc(world);
+		query.buff[query.buff_pos++]=fgetc(STREAM_WORLD);
 
 		if ( query.buff_pos == query.buff[4] ) {
 			query.buff_ready=1;

@@ -2,8 +2,8 @@
 void query_other(void) {
 	int8 parseType;
 
-//	fprintf(world,"# query_other()\r\n");
-//	fprintf(world,"# query function=%lu\r\n",query.function);
+//	fprintf(STREAM_WORLD,"# query_other()\r\n");
+//	fprintf(STREAM_WORLD,"# query function=%lu\r\n",query.function);
 
 	switch ( query.function ) {
 		case DEV_TYPE_DISABLED:
@@ -64,7 +64,7 @@ exception query_self_write_register(int16 address, int16 value) {
 	int16 last;
 
 #if DEBUG_ASCII
-	fprintf(world,"# wr address=%lu value=%lu\r\n",address,value);
+	fprintf(STREAM_WORLD,"# wr address=%lu value=%lu\r\n",address,value);
 #endif
 
 	/* if we have been unlocked, then we can modify serial number */
@@ -110,7 +110,7 @@ exception query_self_write_register(int16 address, int16 value) {
 				write_default_param_file();
 				write_default_device_file();
 #if DEBUG_ASCII
-	fprintf(world,"# writing default files\r\n");
+	fprintf(STREAM_WORLD,"# writing default files\r\n");
 #endif
 				break;
 			case 1999:
@@ -120,7 +120,7 @@ exception query_self_write_register(int16 address, int16 value) {
 				write_device_file();
 
 #if DEBUG_ASCII
-	fprintf(world,"# config.live_interval=%lu\r\n"config.live_interval);
+	fprintf(STREAM_WORLD,"# config.live_interval=%lu\r\n"config.live_interval);
 #endif
 
 				break;
@@ -136,7 +136,7 @@ exception query_self_write_register(int16 address, int16 value) {
 				timers.led_on_green=200;
 				break;
 #if DEBUG_ASCII
-	fprintf(world,"# factory unlocked\r\n");
+	fprintf(STREAM_WORLD,"# factory unlocked\r\n");
 #endif
 
 			default:
@@ -188,7 +188,7 @@ exception query_self_read_register(int16 address, int8 n) {
 		}
 	}
 
-//	fprintf(world,"# query_self_read_register(address=%lu, n=%u) result=%lu\r\n",address,n,result);
+//	fprintf(STREAM_WORLD,"# query_self_read_register(address=%lu, n=%u) result=%lu\r\n",address,n,result);
 
 	query.buff[n]  =make8(result,1);
 	query.buff[n+1]=make8(result,0);
@@ -212,7 +212,7 @@ exception query_self_read_registers(int16 address, int8 nRegisters) {
 
 
 void query_self(void) {
-//	fprintf(world,"# query_self()\r\n");
+//	fprintf(STREAM_WORLD,"# query_self()\r\n");
 
 	query.resultLength=0;
 
@@ -330,19 +330,19 @@ void query_response(void) {
 
 	/* send buff, result, CRC */
 	for ( i=0 ; i<sizeof(buff) ; i++ ) {
-		fputc(buff[i],world);
+		fputc(buff[i],STREAM_WORLD);
 	}	
 	for ( i=0 ; i<query.resultLength ; i++ ) {
-		fputc(query.buff[i],world);
+		fputc(query.buff[i],STREAM_WORLD);
 	}
-	fputc(make8(l,1),world);
-	fputc(make8(l,0),world);
+	fputc(make8(l,1),STREAM_WORLD);
+	fputc(make8(l,0),STREAM_WORLD);
 
 #if 0
-	fprintf(world,"# query result (query.resultLength=%u query.resultException=%u):\r\n",query.resultLength,query.resultException);
+	fprintf(STREAM_WORLD,"# query result (query.resultLength=%u query.resultException=%u):\r\n",query.resultLength,query.resultException);
 	/* query.resultLength is in bytes  .... result is in 16-bit words */
 	for ( i=0 ; i<query.resultLength ; i+=2 ) {
-		fprintf(world,"# query.buff[%u]=%lu (0x%04lX)\r\n",
+		fprintf(STREAM_WORLD,"# query.buff[%u]=%lu (0x%04lX)\r\n",
 			i/2,
 			make16(query.buff[i],query.buff[i+1]),
 			make16(query.buff[i],query.buff[i+1])
@@ -359,20 +359,20 @@ void query_process(void) {
 //	int8 i;
 	int16 lCRC;
 
-//	fprintf(world,"# in query_process()\r\n");
+//	fprintf(STREAM_WORLD,"# in query_process()\r\n");
 
 	query.packet_length=query.buff[4];
 	query.crc=make16(query.buff[query.packet_length-2],query.buff[query.packet_length-1]);	
 	lCRC = crc_chk_pass(0xFFFF,query.buff+1,query.packet_length-3);
 
 	if ( lCRC != query.crc ) {
-//		fprintf(world,"# CRC 0x%04lX != 0x%04lX (LOCAL)\r\n",query.crc,lCRC);
+//		fprintf(STREAM_WORLD,"# CRC 0x%04lX != 0x%04lX (LOCAL)\r\n",query.crc,lCRC);
 		return;
 	}
 
 
 	if ( 19 != query.buff[5] ) {
-//		fprintf(world,"# not query type 19 ... don't know how to handle!\r\n");
+//		fprintf(STREAM_WORLD,"# not query type 19 ... don't know how to handle!\r\n");
 		return;
 	}
 
@@ -387,39 +387,39 @@ void query_process(void) {
 	
 
 #if 0
-	fprintf(world,"# length=%u (query.buff_pos=%u)\r\n",query.packet_length,query.buff_pos);
-	fprintf(world,"# query_id=0x%02X %02X %02X %02X\r\n",
+	fprintf(STREAM_WORLD,"# length=%u (query.buff_pos=%u)\r\n",query.packet_length,query.buff_pos);
+	fprintf(STREAM_WORLD,"# query_id=0x%02X %02X %02X %02X\r\n",
 		make8(query.query_id,3),
 		make8(query.query_id,2),
 		make8(query.query_id,1),
 		make8(query.query_id,0)
 	);
-	fprintf(world,"# device serial=0x%02X %02X %02X %02X\r\n",
+	fprintf(STREAM_WORLD,"# device serial=0x%02X %02X %02X %02X\r\n",
 		make8(query.device_serial,3),
 		make8(query.device_serial,2),
 		make8(query.device_serial,1),
 		make8(query.device_serial,0)
 	);
-	fprintf(world,"# network address=%lu\r\n",query.network_address);
-	fprintf(world,"# function=%lu\r\n",query.function);
-	fprintf(world,"# start address=%lu\r\n",query.start_address);
-	fprintf(world,"# n_words=%u\r\n",query.n_words);
+	fprintf(STREAM_WORLD,"# network address=%lu\r\n",query.network_address);
+	fprintf(STREAM_WORLD,"# function=%lu\r\n",query.function);
+	fprintf(STREAM_WORLD,"# start address=%lu\r\n",query.start_address);
+	fprintf(STREAM_WORLD,"# n_words=%u\r\n",query.n_words);
 
 	/* n words can be the number of query words, in which case we won't have any data besides the CRC */
 	for ( i=0 ; i<query.n_words && i<query.packet_length-2 ; i++ ) {
-		fprintf(world,"# word[%u]=%lu\r\n",i,make16(query.buff[21+i*2],query.buff[22+i*2]));
+		fprintf(STREAM_WORLD,"# word[%u]=%lu\r\n",i,make16(query.buff[21+i*2],query.buff[22+i*2]));
 	}
 
-	fprintf(world,"# rCRC=%lu\r\n",query.crc);
+	fprintf(STREAM_WORLD,"# rCRC=%lu\r\n",query.crc);
 #endif
 
 #if 0
-	fprintf(world,"# dump whole packet:\r\n");
+	fprintf(STREAM_WORLD,"# dump whole packet:\r\n");
 	for ( i=0 ; i<query.packet_length ; i++ ) {
-		fprintf(world,"# buff[%u]=0x%02X",i,query.buff[i]);
+		fprintf(STREAM_WORLD,"# buff[%u]=0x%02X",i,query.buff[i]);
 		if ( i==query.data_start_offset )
-			fprintf(world," (start)");
-		fprintf(world,"\r\n");
+			fprintf(STREAM_WORLD," (start)");
+		fprintf(STREAM_WORLD,"\r\n");
 	}
 #endif
 
@@ -428,8 +428,8 @@ void query_process(void) {
 	our_serial=make32(0,config.serial_prefix,config.serial_number);
 
 #if DEBUG_ASCII
-	fprintf(world,"#   our serial=%c%lu\r\n",config.serial_prefix,config.serial_number);
-	fprintf(world,"# query serial=%c%lu\r\n",make8(query.device_serial,2),(int16) query.device_serial);
+	fprintf(STREAM_WORLD,"#   our serial=%c%lu\r\n",config.serial_prefix,config.serial_number);
+	fprintf(STREAM_WORLD,"# query serial=%c%lu\r\n",make8(query.device_serial,2),(int16) query.device_serial);
 #endif
 
 	if ( our_serial == query.device_serial ) {
