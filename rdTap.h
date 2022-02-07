@@ -5,7 +5,7 @@
 #fuses INTRC_IO
 #fuses NOFCMEN
 #fuses NOIESO
-#fuses PUT
+#fuses NOPUT
 #fuses BROWNOUT
 #fuses BORV30
 #fuses WDT512
@@ -14,6 +14,8 @@
 #fuses SOSC_DIG
 #fuses NOXINST
 #fuses NODEBUG
+#fuses NOPROTECT
+
 
 #byte ANCON0=GETENV("SFR:ancon0")
 #byte ANCON1=GETENV("SFR:ancon1")
@@ -99,14 +101,31 @@ Parameters and devices are stored in 1024 byte EEPROM
 
 
 /* device types for struct_device */
-#define DEV_TYPE_DISABLED     0
-#define DEV_TYPE_MODBUS_1     1
-#define DEV_TYPE_MODBUS_2     2
-#define DEV_TYPE_MODBUS_3     3
-#define DEV_TYPE_MODBUS_4     4
-#define DEV_TYPE_MODBUS_5     5
-#define DEV_TYPE_MODBUS_6     6
-#define DEV_TYPE_MODBUS_16    7
+#define DEV_TYPE_DISABLED       0
+
+/* modbus slave on RS-485 bus */
+#define DEV_TYPE_MODBUS_1       1
+#define DEV_TYPE_MODBUS_2       2
+#define DEV_TYPE_MODBUS_3       3
+#define DEV_TYPE_MODBUS_4       4
+#define DEV_TYPE_MODBUS_5       5
+#define DEV_TYPE_MODBUS_6       6
+#define DEV_TYPE_MODBUS_16      7
+
+/* I2C slave on I2C bus */
+#define DEV_TYPE_I2C_READ_8     16
+#define DEV_TYPE_I2C_READ_16    17
+#define DEV_TYPE_I2C_READ_24    18
+#define DEV_TYPE_I2C_READ_32    19
+#define DEV_TYPE_I2C_WRITE_8    20
+#define DEV_TYPE_I2C_WRITE_16   21
+#define DEV_TYPE_I2C_WRITE_24   22
+#define DEV_TYPE_I2C_WRITE_32   23
+
+/* local registers on this device */
+#define DEV_TYPE_LOCAL_READ_16  32
+#define DEV_TYPE_LOCAL_WRITE_16 32
+
 
 
 /* serial port speeds */

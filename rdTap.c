@@ -4,14 +4,14 @@
 #include "worldDeviceTypes.h"
 
 typedef struct {
-	int8  type;
+	int8  type;           /* device query type */
 	int16 typeWorld;      /* see worldDeviceTypes.h for defines */
 	int8  transmitEvery;
-	int8  networkAddress;
-	int32 serialNumber;
+	int8  networkAddress; /* modbus or I2C address */
+	int32 serialNumber;   /* APRS World or other serial number */
 	int16 startRegister;
 	int8  nRegisters;
-	int8  serialSpeed;   /* see rsTap.h for defines */
+	int8  serialSpeed;    /* see rsTap.h for defines */
 } struct_device;
 
 
@@ -147,7 +147,7 @@ void deviceQuery(void) {
 }
 
 void init() {
-	setup_oscillator(OSC_8MHZ || OSC_INTRC); 
+	setup_oscillator(OSC_8MHZ | OSC_INTRC); 
 	setup_adc_ports(NO_ANALOGS);
 	setup_wdt(WDT_ON);
 
@@ -200,8 +200,24 @@ void init() {
 }
 
 void main(void) {
+	int8 i;
+
 	/* normal device startup */
 	init();
+
+	for ( i=0 ; i<100 ; i++ ) {
+		restart_wdt();
+
+		fprintf(world,"# rdTap %s (%c%lu)\r\n",__DATE__,config.serial_prefix,config.serial_number);
+
+		output_high(LED_GREEN);
+		delay_ms(100);
+		output_low(LED_GREEN);
+		delay_ms(100);
+	}
+
+	fprintf(world,"# enable_interrupts(GLOBAL)\r\n");
+
 	enable_interrupts(GLOBAL);
 
 
@@ -216,10 +232,17 @@ void main(void) {
 	modbus_init();
 
 
-	/* blink LED's quickly */
-	timers.led_on_green=10;
-	delay_ms(100);
-	timers.led_on_green=0;
+	for ( i=0 ; i<100 ; i++ ) {
+		restart_wdt();
+
+		fprintf(world,"# rdTap %s (%c%lu)\r\n",__DATE__,config.serial_prefix,config.serial_number);
+
+		/* blink LED's quickly */
+		timers.led_on_green=10;
+		delay_ms(100);
+		timers.led_on_green=0;
+		delay_ms(100);
+	}
 
 
 	/* main loop */
