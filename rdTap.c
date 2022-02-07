@@ -1,6 +1,6 @@
 #define DEBUG_ASCII 0
 
-#include "rsTap.h"
+#include "rdTap.h"
 #include "worldDeviceTypes.h"
 
 typedef struct {
@@ -66,12 +66,12 @@ struct_qbuff  qbuff;
 struct_query  query;
 struct_config config;
 
-#include "param.c"
-#include "paramDevice.c"
-#include "modbus_int_uart.c"
-#include "interrupt.c"
-#include "live.c"
-#include "queryHandler.c"
+#include "param_rdTap.c"
+#include "paramDevice_rdTap.c"
+#include "modbus_int_uart_rdTap.c"
+#include "interrupt_rdTap.c"
+#include "live_rdTap.c"
+#include "queryHandler_rdTap.c"
 
 
 
