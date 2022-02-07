@@ -239,13 +239,13 @@ void main(void) {
 	enable_interrupts(GLOBAL);
 
 //	fprintf(STREAM_WORLD,"# write default param file\r\n");
-	write_default_param_file();
+//	write_default_param_file();
 
 //	fprintf(STREAM_WORLD,"# write default device file\r\n");
-	write_default_device_file();
+//	write_default_device_file();
 
 //	fprintf(STREAM_WORLD,"# read paramaters\r\n");
-	read_param_file();
+//	read_param_file();
 	read_device_file();
 
 //	fprintf(STREAM_WORLD,"# modbus_init()\r\n");
@@ -260,6 +260,7 @@ void main(void) {
 	for ( ; ; ) {
 		restart_wdt();
 
+#if 0
 		if ( timers.now_poll ) {
 			timers.now_poll=0;
 			timers.led_on_green=50;
@@ -271,8 +272,12 @@ void main(void) {
 			query_reset();
 
 		}
+#else
+		timers.led_on_green=20;
+		delay_ms(100);
+		fprintf(STREAM_WORLD,"%u\r\n",i++);
+#endif
 
-		fprintf(STREAM_WORLD,"*\r\n");
 	}
 }
 
