@@ -18,6 +18,32 @@ int16 i2c_register_read16(int8 i2c_address, int8 regaddr) {
 	return make16(msb,lsb);
 }
 
+void i2c_buff_read(int8 i2c_address, int8 regaddr, int8 *data, int8 count) {
+	/* start I2C transaction and write the register we want to read to the slave */
+	i2c_start();
+	delay_us(15);
+	i2c_write(i2c_address);
+	i2c_write(regaddr);
+
+	/* restart I2C and read two bytes from the slave */
+	i2c_start();
+	delay_us(15);
+	i2c_write(i2c_address | 1);  // read cycle
+
+	/* stop reading before last byte */	
+	while ( count-- != 1 ) {
+		*data=i2c_read(1);
+		data++;
+	}
+
+	/* send last byte with a NAK */
+	*data=i2c_read(0);                                
+	i2c_stop();
+}
+
+
+
+
 void i2c_register_write16(int8 i2c_address, int8 regaddr, int16 value) {
 	i2c_start();
 	delay_us(15);                                                 

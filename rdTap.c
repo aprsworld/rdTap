@@ -65,6 +65,7 @@ struct_qbuff  qbuff;
 struct_query  query;
 struct_config config;
 
+#include "i2c_access_rdTap.c"
 #include "mcp3208_rdTap.c"
 #include "uart_sc16is740_rdTap.c"
 #include "param_rdTap.c"
@@ -79,7 +80,7 @@ void deviceQuery(void) {
 	static int16 measurementNumber=0;
 	static int8  nCycles[DEV_MAX_N];
 	int8 n;
-
+	int8 i;
 
 //	fprintf(world,"# querying all enabled devices:\r\n");
 	for ( n=0 ; n<DEV_MAX_N ; n++ ) {
@@ -98,52 +99,96 @@ void deviceQuery(void) {
 		}
 
 
-		/* set serial port speed */
-		if ( DEV_SERIAL_19200 == device[n].serialSpeed ) {
-			set_uart_speed(19200,MODBUS_SERIAL);
-		} else {
-			set_uart_speed(9600,MODBUS_SERIAL);
-		}
-
 
 		qbuff.deviceNumber=n;
 		qbuff.measurementNumber=measurementNumber;
 
-		if ( DEV_TYPE_MODBUS_3 == device[n].type || DEV_TYPE_MODBUS_4 == device[n].type ) {
-			/* Modbus read input or holding registers */
-			if ( DEV_TYPE_MODBUS_4 == device[n].type ) {
-				qbuff.rException=modbus_read_input_registers(device[n].networkAddress, device[n].startRegister, device[n].nRegisters);
+
+		if ( device[n].type <= DEV_TYPE_MODBUS_MAX ) {
+			/* modbus device type */
+
+
+			/* set serial port speed */
+			if ( DEV_SERIAL_19200 == device[n].serialSpeed ) {
+				set_uart_speed(19200,MODBUS_SERIAL);
 			} else {
-				qbuff.rException=modbus_read_holding_registers(device[n].networkAddress, device[n].startRegister, device[n].nRegisters);
+				set_uart_speed(9600,MODBUS_SERIAL);
 			}
 
-			/* no error, copy data to buffer to send */
-			if ( 0 == qbuff.rException ) {
-				/* prepare qbuff with data to live send */
-				qbuff.rResultLength=modbus_rx.len-1;
-				/* copy Modbus results to live buffer */
-				memcpy(&qbuff.rResult,&modbus_rx.data[1],modbus_rx.len-1); 
+
+			if ( DEV_TYPE_MODBUS_3 == device[n].type || DEV_TYPE_MODBUS_4 == device[n].type ) {
+				/* Modbus read input or holding registers */
+				if ( DEV_TYPE_MODBUS_4 == device[n].type ) {
+					qbuff.rException=modbus_read_input_registers(device[n].networkAddress, device[n].startRegister, device[n].nRegisters);
+				} else {
+					qbuff.rException=modbus_read_holding_registers(device[n].networkAddress, device[n].startRegister, device[n].nRegisters);
+				}
+
+				/* no error, copy data to buffer to send */
+				if ( 0 == qbuff.rException ) {
+					/* prepare qbuff with data to live send */
+					qbuff.rResultLength=modbus_rx.len-1;
+					/* copy Modbus results to live buffer */
+					memcpy(&qbuff.rResult,&modbus_rx.data[1],modbus_rx.len-1); 
+
+					live_send();
+				}
+			} else if ( DEV_TYPE_MODBUS_1==device[n].type || DEV_TYPE_MODBUS_2==device[n].type ) {
+				/* Modbus read coil or discrete input */
+				qbuff.rException=modbus_read_coils(device[n].networkAddress, device[n].startRegister, device[n].nRegisters);
+
+				/* no error, copy data to buffer to send */
+				if ( 0 == qbuff.rException ) {
+					/* prepare qbuff with data to live send */
+					qbuff.rResultLength=modbus_rx.len-1;
+					/* copy Modbus results to live buffer */
+					memcpy(&qbuff.rResult,&modbus_rx.data[1],modbus_rx.len-1); 
+
+					live_send();
+				}
+			}
+		} else if ( device[n].type <= DEV_TYPE_I2C_MAX ) {
+			/* I2C device */
+			fprintf(STREAM_WORLD,"# i2c device to query\r\n");
+
+
+			fprintf(STREAM_WORLD,"device[%u]\r\n",n);
+			fprintf(STREAM_WORLD,"\ttype=%u\r\n",device[n].type);
+			fprintf(STREAM_WORLD,"\ttransmitEvery=%u\r\n",device[n].transmitEvery);
+			fprintf(STREAM_WORLD,"\tnetworkAddress=0x%02x\r\n",device[n].networkAddress);
+			fprintf(STREAM_WORLD,"\tserialNumber=0x%02x%02x%02x%02x\r\n",
+				make8(device[n].serialNumber,3),
+				make8(device[n].serialNumber,2),
+				make8(device[n].serialNumber,1),
+				make8(device[n].serialNumber,0)
+			);
+			fprintf(STREAM_WORLD,"\tstartRegister=%lu\r\n",device[n].startRegister);
+			fprintf(STREAM_WORLD,"\tnRegisters=%u\r\n",device[n].nRegisters);
+
+			if ( DEV_TYPE_I2C_READ_8 == device[n].type ) {
+				/* start a read at start address then just read a byte at a time. nRegisters is bytes */
+				i2c_buff_read(device[n].networkAddress, device[n].startRegister, qbuff.rResult, device[n].nRegisters);
+
+				qbuff.rException=0;
+				qbuff.rResultLength=device[n].nRegisters;
+
+				/* debug dump */
+				for ( i=0 ; i<device[n].nRegisters ; i++ ) {
+					fprintf(STREAM_WORLD,"# reg addr[0x%02x]=0x%02x (%u)\r\n",i+device[n].startRegister,qbuff.rResult[i],qbuff.rResult[i]);
+				}
 
 				live_send();
 			}
-		} else if ( DEV_TYPE_MODBUS_1==device[n].type || DEV_TYPE_MODBUS_2==device[n].type ) {
-			/* Modbus read coil or discrete input */
-			qbuff.rException=modbus_read_coils(device[n].networkAddress, device[n].startRegister, device[n].nRegisters);
 
-			/* no error, copy data to buffer to send */
-			if ( 0 == qbuff.rException ) {
-				/* prepare qbuff with data to live send */
-				qbuff.rResultLength=modbus_rx.len-1;
-				/* copy Modbus results to live buffer */
-				memcpy(&qbuff.rResult,&modbus_rx.data[1],modbus_rx.len-1); 
+		} else {
+			/* local */
+			fprintf(STREAM_WORLD,"# local device to query\r\n");
 
-				live_send();
-			}
 		}
 	}
 
 	measurementNumber++;
-	timers.led_on_green=0;
+//	timers.led_on_green=0;
 }
 
 void init() {
@@ -260,19 +305,21 @@ void main(void) {
 	for ( ; ; ) {
 		restart_wdt();
 
-#if 0
+
 		if ( timers.now_poll ) {
 			timers.now_poll=0;
-			timers.led_on_green=50;
+			timers.led_on_green=200;
+			fprintf(STREAM_WORLD,"# deviceQuery() %u ...",i++);
 			deviceQuery();
+//			fprintf(STREAM_WORLD," done\r\n");
 		}
-
+#if 0
 		if ( query.buff_ready ) {
 			query_process();
 			query_reset();
 
 		}
-#else
+
 		timers.led_on_green=20;
 		delay_ms(100);
 		fprintf(STREAM_WORLD,"%u\r\n",i++);
