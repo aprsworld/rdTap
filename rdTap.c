@@ -298,9 +298,29 @@ void main(void) {
 	devicesDump();
 #endif
 
+	iridium_mr_clear();
+
+	/* test stub */
+	strcpy(sbd.mo_buff,"Outgoing SBD message!");
+	sbd.mo_length=strlen(sbd.mo_buff);
+
 	/* main loop */
 	for ( ; ; ) {
 		restart_wdt();
+
+		if ( true ) {
+			/* iridium related */
+			if ( 0==input(STAT_4) && uart_kbhit() ) {
+				iridium_getc();
+			}
+
+			if ( 0 != sbd.mo_state ) {
+				output_high(CTRL_4);
+				iridium_send_mo();
+			} else {
+				output_low(CTRL_4);
+			}
+		}
 
 
 		if ( timers.now_poll ) {
@@ -309,6 +329,12 @@ void main(void) {
 //			fprintf(STREAM_WORLD,"# deviceQuery() %u ...",i++);
 			deviceQuery();
 //			fprintf(STREAM_WORLD," done\r\n");
+
+
+			if ( 0 == sbd.mo_state ) {
+				/* stub to fire off an SBD test message */
+				sbd.mo_state=1;
+			}
 		}
 #if 0
 		if ( query.buff_ready ) {
