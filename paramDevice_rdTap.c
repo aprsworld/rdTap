@@ -42,7 +42,7 @@ void write_default_device_file(void) {
 	device[1].networkAddress=0x36;
 	device[1].serialNumber=('A'<<16) + 4791; 
 	device[1].startRegister=0;
-	device[1].nRegisters=16;
+	device[1].nRegisters=32;
 
 	/* dcswc_module_voltage_current_counter */
 	device[2].type=DEV_TYPE_I2C_READ_8;
@@ -51,7 +51,7 @@ void write_default_device_file(void) {
 	device[2].networkAddress=0x38;
 	device[2].serialNumber=('A'<<16) + 4792; 
 	device[2].startRegister=0;
-	device[2].nRegisters=16;
+	device[2].nRegisters=32;
 
 
 	fprintf(STREAM_WORLD,"# write_device_file()\r\n");

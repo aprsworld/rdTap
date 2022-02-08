@@ -74,6 +74,7 @@ struct_config config;
 #include "interrupt_rdTap.c"
 #include "live_rdTap.c"
 #include "queryHandler_rdTap.c"
+#include "iridium_sbd_rdTap.c"
 
 
 void deviceQuery(void) {
