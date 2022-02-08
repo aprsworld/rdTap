@@ -80,7 +80,6 @@ void deviceQuery(void) {
 	static int16 measurementNumber=0;
 	static int8  nCycles[DEV_MAX_N];
 	int8 n;
-	int8 i;
 
 //	fprintf(world,"# querying all enabled devices:\r\n");
 	for ( n=0 ; n<DEV_MAX_N ; n++ ) {
@@ -149,9 +148,9 @@ void deviceQuery(void) {
 			}
 		} else if ( device[n].type <= DEV_TYPE_I2C_MAX ) {
 			/* I2C device */
+
+#if DEBUG_ASCII
 			fprintf(STREAM_WORLD,"# i2c device to query\r\n");
-
-
 			fprintf(STREAM_WORLD,"device[%u]\r\n",n);
 			fprintf(STREAM_WORLD,"\ttype=%u\r\n",device[n].type);
 			fprintf(STREAM_WORLD,"\ttransmitEvery=%u\r\n",device[n].transmitEvery);
@@ -164,6 +163,7 @@ void deviceQuery(void) {
 			);
 			fprintf(STREAM_WORLD,"\tstartRegister=%lu\r\n",device[n].startRegister);
 			fprintf(STREAM_WORLD,"\tnRegisters=%u\r\n",device[n].nRegisters);
+#endif
 
 			if ( DEV_TYPE_I2C_READ_8 == device[n].type ) {
 				/* start a read at start address then just read a byte at a time. nRegisters is bytes */
@@ -172,23 +172,25 @@ void deviceQuery(void) {
 				qbuff.rException=0;
 				qbuff.rResultLength=device[n].nRegisters;
 
+#if DEBUG_ASCII
 				/* debug dump */
 				for ( i=0 ; i<device[n].nRegisters ; i++ ) {
 					fprintf(STREAM_WORLD,"# reg addr[0x%02x]=0x%02x (%u)\r\n",i+device[n].startRegister,qbuff.rResult[i],qbuff.rResult[i]);
 				}
+#endif
 
 				live_send();
 			}
 
 		} else {
 			/* local */
+#if DEBUG_ASCII
 			fprintf(STREAM_WORLD,"# local device to query\r\n");
-
+#endif
 		}
 	}
 
 	measurementNumber++;
-//	timers.led_on_green=0;
 }
 
 void init() {
@@ -259,6 +261,7 @@ void main(void) {
 		delay_ms(100);
 	}
 
+#if DEBUG_ASCII
 	fprintf(STREAM_WORLD,"# rdTap %s (%c%lu)\r\n",
 		__DATE__,
 		config.serial_prefix,
@@ -278,28 +281,21 @@ void main(void) {
 		default:                fprintf(STREAM_WORLD,"UNKNOWN!");
 	}
 	fprintf(STREAM_WORLD,"\r\n");
+#endif
 
-
-//	fprintf(STREAM_WORLD,"# enable_interrupts(GLOBAL)\r\n");
 	enable_interrupts(GLOBAL);
 
-//	fprintf(STREAM_WORLD,"# write default param file\r\n");
 	write_default_param_file();
-
-//	fprintf(STREAM_WORLD,"# write default device file\r\n");
 	write_default_device_file();
 
-//	fprintf(STREAM_WORLD,"# read paramaters\r\n");
 	read_param_file();
 	read_device_file();
 
-//	fprintf(STREAM_WORLD,"# modbus_init()\r\n");
 	modbus_init();
 
-
+#if DEBUG_ASCII
 	devicesDump();
-
-	fprintf(STREAM_WORLD,"# starting main() loop\r\n");
+#endif
 
 	/* main loop */
 	for ( ; ; ) {
@@ -309,7 +305,7 @@ void main(void) {
 		if ( timers.now_poll ) {
 			timers.now_poll=0;
 			timers.led_on_green=200;
-			fprintf(STREAM_WORLD,"# deviceQuery() %u ...",i++);
+//			fprintf(STREAM_WORLD,"# deviceQuery() %u ...",i++);
 			deviceQuery();
 //			fprintf(STREAM_WORLD," done\r\n");
 		}
@@ -319,10 +315,6 @@ void main(void) {
 			query_reset();
 
 		}
-
-		timers.led_on_green=20;
-		delay_ms(100);
-		fprintf(STREAM_WORLD,"%u\r\n",i++);
 #endif
 
 	}

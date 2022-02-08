@@ -36,7 +36,7 @@ void write_default_device_file(void) {
 	device[0].nRegisters=3*2; /* two byte registers */
 
 	/* dcswc_module_voltage_current_counter */
-	device[1].type=DEV_TYPE_DISABLED; // I2C_READ_16;
+	device[1].type=DEV_TYPE_I2C_READ_8;
 	device[1].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
 	device[1].transmitEvery=1;
 	device[1].networkAddress=0x36;
@@ -44,6 +44,14 @@ void write_default_device_file(void) {
 	device[1].startRegister=0;
 	device[1].nRegisters=16;
 
+	/* dcswc_module_voltage_current_counter */
+	device[2].type=DEV_TYPE_I2C_READ_8;
+	device[2].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[2].transmitEvery=1;
+	device[2].networkAddress=0x38;
+	device[2].serialNumber=('A'<<16) + 4792; 
+	device[2].startRegister=0;
+	device[2].nRegisters=16;
 
 
 	fprintf(STREAM_WORLD,"# write_device_file()\r\n");
