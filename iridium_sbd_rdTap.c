@@ -349,7 +349,8 @@ void iridium_mo_send(void) {
 	} else if ( 16 == sbd.mo_state ) {
 		/* done sending */
 		/* download MT if needed? */
-		/* turn off modem if desired? */
+		/* turn off modem */
+		iridium_off();
 
 		/* go back to waiting */
 		iridium_mr_clear();

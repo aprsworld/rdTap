@@ -252,7 +252,7 @@ void deviceQuery(void) {
 	measurementNumber++;
 
 	if ( 0 == sbdCycle ) {
-		sbdCycle=config.sbd_every;
+		sbdCycle=(config.sbd_every-1);
 	} else {
 		sbdCycle--;
 	}
@@ -383,8 +383,6 @@ void main(void) {
 			if ( 0 != sbd.mo_state ) {
 				iridium_on(); /* probably not needed */
 				iridium_mo_send();
-			} else {
-				iridium_off(); /* probably not needed */
 			}
 		}
 
