@@ -186,7 +186,13 @@ void deviceQuery(void) {
 				live_send();
 
 				/* build SBD data payload */
-				/* header, 2 bytes, device number, and data length */
+				if ( 0 == sbd.mo_length ) {
+					/* put header with measurement number if we don't already have it */
+					sbd.mo_buff[sbd.mo_length++]=make8(measurementNumber,1);
+					sbd.mo_buff[sbd.mo_length++]=make8(measurementNumber,0);
+				}
+
+				/* sub-header, 2 bytes, device number, and data length */
 				sbd.mo_buff[sbd.mo_length++]=n;
 				sbd.mo_buff[sbd.mo_length++]=qbuff.rResultLength;
 				/* body */
@@ -347,7 +353,7 @@ void main(void) {
 
 			if ( 0 != sbd.mo_state ) {
 				output_high(CTRL_4);
-				iridium_send_mo();
+				iridium_mo_send();
 			} else {
 				output_low(CTRL_4);
 			}

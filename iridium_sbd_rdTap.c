@@ -1,3 +1,5 @@
+#define SBD_DEBUG 1
+
 typedef struct {
 	/* +SBDIX data from most recent */
 	int8 sbdix_mo_status;
@@ -77,7 +79,11 @@ void iridium_mr_clear(void) {
 	sbd.mr_length=0;
 }
 
-void iridium_send_mo(void) {
+void iridium_mo_clear(void) {
+	sbd.mo_length=0;
+}
+
+void iridium_mo_send(void) {
 	int16 l;
 	int16 checksum;
 
@@ -238,6 +244,10 @@ void iridium_send_mo(void) {
 		<MT length> - The size (in bytes) of the MT message.
 
 		<MT queued> - The number of MT messages in the queue waiting to be downloaded.
+
+		+SBDIX:32,22, 2, 0, 0, 0
+        012345678901234567890123
+        0         1         2
 		*/
 
 		if ( 1 == sbd.mr_ready ) {
@@ -252,6 +262,8 @@ void iridium_send_mo(void) {
 					sbd.mo_state++;
 					sbd.mo_try=0;
 				} else {
+					/* didn't get a 0 or 1 or 2 ... but still go on to next state for OK */
+					sbd.mo_state++;
 					sbd.mo_try++;
 				}
 			}
@@ -273,11 +285,11 @@ void iridium_send_mo(void) {
 			/* need to try SBDIX again */
 			sbd.mo_state=10;
 			if ( 1 == sbd.mo_try || 2 == sbd.mo_try ) {
-				sbd.mo_sbdix_wait=2;
+				sbd.mo_sbdix_wait=3;
 			} else if ( 3 == sbd.mo_try || 4 == sbd.mo_try ) {
-				sbd.mo_sbdix_wait=20;
+				sbd.mo_sbdix_wait=21;
 			} else if ( 5 == sbd.mo_try ) {
-				sbd.mo_sbdix_wait=250;
+				sbd.mo_sbdix_wait=251;
 			} else {
 				/* give up and clear buffer */
 				sbd.mo_state=13;
@@ -318,11 +330,9 @@ void iridium_send_mo(void) {
 		/* turn off modem if desired? */
 
 		/* go back to waiting */
-		iridium_mr_clear();	
+		iridium_mr_clear();
+		iridium_mo_clear();	
 		sbd.mo_state=0;
 	}
-
-
-
 }
 
