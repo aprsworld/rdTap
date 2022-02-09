@@ -31,6 +31,7 @@ struct_iridium_sbd sbd={0};
 
 
 void iridium_on(void) {
+	/* turn power switch on */
 	switch ( config.sbd_config ) {
 		case 1: output_high(CTRL_0); break;
 		case 2: output_high(CTRL_1); break;
@@ -38,6 +39,10 @@ void iridium_on(void) {
 		case 4: output_high(CTRL_3); break;
 		case 5: output_high(CTRL_4); break;
 	}
+	
+	/* set UART NRTS to turn on Iridium modem ON/OFF input */
+	uart_write(UART_MCR, 0b00000000);
+
 }
 
 void iridium_off(void) {
@@ -48,6 +53,9 @@ void iridium_off(void) {
 		case 4: output_low(CTRL_3); break;
 		case 5: output_low(CTRL_4); break;
 	}
+
+	/* set UART NRTS to turn on Iridium modem ON/OFF input */
+	uart_write(UART_MCR, 0b00000010);
 }
 
 /* if we have characters to be received, this function reads them */
