@@ -80,8 +80,8 @@ void uart_init(int8 divisor) {
 	uart_write(UART_LCR, 0xBF); // access EFR register
 	uart_write(UART_EFR, 0X10); // enable enhanced registers
  	uart_write(UART_LCR, 0x03); // 8 data bits, 1 stop bit, no parity
-	uart_write(UART_IER, 0x01); // enable interrupt on receive data becomming available
-//	uart_write(UART_IER, 0x00); // disable all interrupts
+//	uart_write(UART_IER, 0x01); // enable interrupt on receive data becomming available
+	uart_write(UART_IER, 0x00); // disable all interrupts
 	uart_write(UART_FCR, 0x07); // reset TXFIFO, reset RXFIFO, enable FIFO mode
 }
 

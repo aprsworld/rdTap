@@ -1,20 +1,25 @@
 typedef struct {
+	/* +SBDIX data from most recent */
+	int8 sbdix_mo_status;
+	int8 sbdix_mo_msn;
+	int8 sbdix_mt_status;
+	int8 sbdix_mt_msn;
+	int8 sbdix_mt_length;
+	int8 sbdix_mt_queued;
+
 	/* "Mobile Originated" message from us to network */
 	int8 mo_state;
 	int8 mo_buff[272];
 	int16 mo_length;
 
+	/* "Mobile Terminated" messages from network to us */
+	int8 mt_state;
+	
+
 	/* modem talking to us for status, AT commands, etc */
-	/*
-	mr_state:
-		0 => receiving data
-		1 => message received ('\r' encountered), null terminated, and ready to be processed
-	*/
-	int8 mr_state; 
+	int8 mr_ready;          /* 1=> message ready for consumption */
 	int8 mr_buff[64];
 	int8 mr_length;
-
-	/* "Mobile Terminated" messages from network to us */
 
 } struct_iridium_sbd;
 
@@ -24,30 +29,32 @@ struct_iridium_sbd sbd={0};
 void iridium_getc(void) {
 	int8 c;
 
-	if ( 1 == sbd.mr_state ) {
-		/* we have received a message. bail out and let message be processed */
-		return;
-	}
 
-	/* TODO: check for overflow? */
-	
 	/* read character from UART */
 	c = uart_getc();
 
-	if ( 0 == sbd.mr_state ) {
+	if ( '\r' == c ) {
+		/* except when receiving binary data, we don't care about '\r' */
+		return;
+	}
+
+	/* modem always appears to send '\r' '\n' */
+	
+
+	if ( 0 == sbd.mr_ready ) {
 		/* receiving data */
 
-		if ( '\n' == c ) {
-			/* except when receiving binary data, we don't care about '\n' */
+		if ( '\n' == c && 0==sbd.mr_length ) {
+			/* responses usually appear to be \r\nOK\r\n ... this skips the empty message */
 			return;
 		}
 
-		if ( '\r' == c ) {
-			/* replace '\r' with '\0' */
+		if ( '\n' == c ) {
+			/* replace '\n' with '\0' */
 			sbd.mr_buff[sbd.mr_length]='\0';
 			
 			/* mark that we have a message ready */
-			sbd.mr_state=1;
+			sbd.mr_ready=1;
 
 			/* done */
 			return;
@@ -64,7 +71,7 @@ void iridium_getc(void) {
 }
 
 void iridium_mr_clear(void) {
-	sbd.mr_state=0;
+	sbd.mr_ready=0;
 	sbd.mr_length=0;
 }
 
@@ -77,16 +84,16 @@ void iridium_send_mo(void) {
 		return;
 
 	} else if ( 1 == sbd.mo_state ) {
-		/* send 'AT' to say hi to the modem */
+		/* send 'ATE0' to turn off modem echo for subsequent commands */
 		iridium_mr_clear();
-		printf(uart_putc,"AT\r");
+		printf(uart_putc,"ATE0\r");
 		sbd.mo_state++;
 		/* TODO set response timeout */
 
 	} else if ( 2 == sbd.mo_state ) {
 		/* receive response 'OK' */
 
-		if ( 1 == sbd.mr_state ) {
+		if ( 1 == sbd.mr_ready ) {
 			if ( 'O'==sbd.mr_buff[0] && 'K'==sbd.mr_buff[1] ) {
 				sbd.mo_state++;
 			} 
@@ -104,7 +111,7 @@ void iridium_send_mo(void) {
 	} else if ( 4 == sbd.mo_state ) {
 		/* receive response 'OK' */
 
-		if ( 1 == sbd.mr_state ) {
+		if ( 1 == sbd.mr_ready ) {
 			if ( 'O'==sbd.mr_buff[0] && 'K'==sbd.mr_buff[1] ) {
 				sbd.mo_state++;
 			} 
@@ -124,7 +131,7 @@ void iridium_send_mo(void) {
 	} else if ( 6 == sbd.mo_state ) {
 		/* receive response 'READY' */
 
-		if ( 1 == sbd.mr_state ) {
+		if ( 1 == sbd.mr_ready ) {
 			if ( 'R'==sbd.mr_buff[0] 
                  && 'E'==sbd.mr_buff[1] 
                  && 'A'==sbd.mr_buff[2]
@@ -173,7 +180,7 @@ void iridium_send_mo(void) {
 
 		/* status must be 0 */
 
-		if ( 1 == sbd.mr_state ) {
+		if ( 1 == sbd.mr_ready ) {
 			if ( '0'==sbd.mr_buff[0] ) {
 				/* TODO BUG ... what about non-zero response */
 				sbd.mo_state++;
@@ -186,7 +193,7 @@ void iridium_send_mo(void) {
 	} else if ( 9 == sbd.mo_state ) {
 		/* receive response 'OK' */
 
-		if ( 1 == sbd.mr_state ) {
+		if ( 1 == sbd.mr_ready ) {
 			if ( 'O'==sbd.mr_buff[0] && 'K'==sbd.mr_buff[1] ) {
 				sbd.mo_state++;
 			}
@@ -225,22 +232,47 @@ void iridium_send_mo(void) {
 		<MT queued> - The number of MT messages in the queue waiting to be downloaded.
 		*/
 
-		if ( 1 == sbd.mr_state ) {
-			/* TODO BUG ignore for now .... if we got a response, then go on to next */
-			sbd.mo_state++;
-		}
+		if ( 1 == sbd.mr_ready ) {
+			if ( '+'==sbd.mr_buff[0] && 'S'==sbd.mr_buff[1] &&
+			     'B'==sbd.mr_buff[2] && 'D'==sbd.mr_buff[3] &&
+			     'I'==sbd.mr_buff[4] && 'X'==sbd.mr_buff[5] 
+			) {
+				sbd.mo_state++;
+			}
 
+			iridium_mr_clear();				
+		}
 	} else if ( 12 == sbd.mo_state ) {
+		/* receive response 'OK' */
+
+		if ( 1 == sbd.mr_ready ) {
+			if ( 'O'==sbd.mr_buff[0] && 'K'==sbd.mr_buff[1] ) {
+				sbd.mo_state++;
+			}
+		
+			iridium_mr_clear();				
+		}
+	} else if ( 13 == sbd.mo_state ) {
 		/* send 'AT+SBDD=0' to clear MO buffer */
 		iridium_mr_clear();
-		printf(uart_putc,"AT+SBDD=0\r");
+		printf(uart_putc,"AT+SBDD0\r");
 		sbd.mo_state++;
 		/* TODO set response timeout */
 		/* TODO ... be careful about starting over without buffer being cleared */
-	} else if ( 13 == sbd.mo_state ) {
+	} else if ( 14 == sbd.mo_state ) {
+		if ( 1 == sbd.mr_ready ) {
+			if ( '0'==sbd.mr_buff[0] ) {
+				/* TODO BUG ... what about non-zero response */
+				sbd.mo_state++;
+			} else {
+				/* didn't get '0' ... clear mr message */
+				iridium_mr_clear();				
+			}
+		}
+	} else if ( 15 == sbd.mo_state ) {
 		/* receive response 'OK' */
 
-		if ( 1 == sbd.mr_state ) {
+		if ( 1 == sbd.mr_ready ) {
 			if ( 'O'==sbd.mr_buff[0] && 'K'==sbd.mr_buff[1] ) {
 				sbd.mo_state++;
 			}
@@ -248,7 +280,7 @@ void iridium_send_mo(void) {
 			iridium_mr_clear();				
 		}
 
-	} else if ( 14 == sbd.mo_state ) {
+	} else if ( 16 == sbd.mo_state ) {
 		/* done sending */
 		/* download MT if needed? */
 		/* turn off modem if desired? */

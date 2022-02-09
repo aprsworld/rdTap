@@ -181,6 +181,16 @@ void deviceQuery(void) {
 #endif
 
 				live_send();
+
+				/* stub to send message via SBD */
+				if ( 2 == n ) {
+					/* copy data to SBD transmit buffer */
+					memcpy(sbd.mo_buff, qBuff.rResult, qbuff.rResultLength);
+					sbd.mo_length=qbuff.rResultLength;
+					sbd.mo_state=1;
+				}
+
+
 			}
 
 		} else {
@@ -301,7 +311,7 @@ void main(void) {
 	iridium_mr_clear();
 
 	/* test stub */
-	strcpy(sbd.mo_buff,"Outgoing SBD message!");
+	sprintf(sbd.mo_buff,"rdTap (%c%04lu) %s %s",config.serial_prefix,config.serial_number,__DATE__,__TIME__);
 	sbd.mo_length=strlen(sbd.mo_buff);
 
 	/* main loop */
@@ -310,7 +320,8 @@ void main(void) {
 
 		if ( true ) {
 			/* iridium related */
-			if ( 0==input(STAT_4) && uart_kbhit() ) {
+			/* read character if we don't have an unprocessed message and there is a character available */
+			if ( 0==sbd.mr_ready && uart_kbhit() ) {
 				iridium_getc();
 			}
 
@@ -331,10 +342,12 @@ void main(void) {
 //			fprintf(STREAM_WORLD," done\r\n");
 
 
+#if 0
 			if ( 0 == sbd.mo_state ) {
 				/* stub to fire off an SBD test message */
 				sbd.mo_state=1;
 			}
+#endif
 		}
 #if 0
 		if ( query.buff_ready ) {
