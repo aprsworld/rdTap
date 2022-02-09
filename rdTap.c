@@ -12,6 +12,7 @@ typedef struct {
 	int16 startRegister;
 	int8  nRegisters;
 	int8  serialSpeed;    /* see rsTap.h for defines */
+	int8  sbdModulo;     /* when 0==(measurementNumber % sbdModulo), then we send via SBD */
 } struct_device;
 
 
@@ -82,6 +83,7 @@ void deviceQuery(void) {
 	static int16 measurementNumber=0;
 	static int8  nCycles[DEV_MAX_N];
 	int8 n;
+	int16 l;
 
 //	fprintf(world,"# querying all enabled devices:\r\n");
 	for ( n=0 ; n<DEV_MAX_N ; n++ ) {
@@ -183,6 +185,16 @@ void deviceQuery(void) {
 
 				live_send();
 
+				/* build SBD data payload */
+				/* header, 2 bytes, device number, and data length */
+				sbd.mo_buff[sbd.mo_length++]=n;
+				sbd.mo_buff[sbd.mo_length++]=qbuff.rResultLength;
+				/* body */
+				for ( l=0 ; l<qbuff.rResultLength ; l++ ) {
+					sbd.mo_buff[sbd.mo_length++]=qBuff.rResult[l];
+				}
+
+#if 0
 				/* stub to send message via SBD */
 				if ( 2 == n ) {
 					/* copy data to SBD transmit buffer */
@@ -190,6 +202,8 @@ void deviceQuery(void) {
 					sbd.mo_length=qbuff.rResultLength;
 					sbd.mo_state=1;
 				}
+#endif
+
 
 
 			}
@@ -200,6 +214,11 @@ void deviceQuery(void) {
 			fprintf(STREAM_WORLD,"# local device to query\r\n");
 #endif
 		}
+	}
+
+	/* if we have data to send, then we sent it */
+	if ( sbd.mo_length > 0 ) {
+		sbd.mo_state=1;
 	}
 
 	measurementNumber++;
@@ -312,8 +331,8 @@ void main(void) {
 	iridium_mr_clear();
 
 	/* test stub */
-	sprintf(sbd.mo_buff,"rdTap (%c%04lu) %s %s",config.serial_prefix,config.serial_number,__DATE__,__TIME__);
-	sbd.mo_length=strlen(sbd.mo_buff);
+//	sprintf(sbd.mo_buff,"rdTap (%c%04lu) %s %s",config.serial_prefix,config.serial_number,__DATE__,__TIME__);
+//	sbd.mo_length=strlen(sbd.mo_buff);
 
 	/* main loop */
 	for ( ; ; ) {
