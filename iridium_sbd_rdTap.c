@@ -29,6 +29,27 @@ typedef struct {
 
 struct_iridium_sbd sbd={0};
 
+
+void iridium_on(void) {
+	switch ( config.sbd_config ) {
+		case 1: output_high(CTRL_0); break;
+		case 2: output_high(CTRL_1); break;
+		case 3: output_high(CTRL_2); break;
+		case 4: output_high(CTRL_3); break;
+		case 5: output_high(CTRL_4); break;
+	}
+}
+
+void iridium_off(void) {
+	switch ( config.sbd_config ) {
+		case 1: output_low(CTRL_0); break;
+		case 2: output_low(CTRL_1); break;
+		case 3: output_low(CTRL_2); break;
+		case 4: output_low(CTRL_3); break;
+		case 5: output_low(CTRL_4); break;
+	}
+}
+
 /* if we have characters to be received, this function reads them */
 void iridium_getc(void) {
 	int8 c;
@@ -81,6 +102,7 @@ void iridium_mr_clear(void) {
 
 void iridium_mo_clear(void) {
 	sbd.mo_length=0;
+	sbd.mo_state=0;
 }
 
 void iridium_mo_send(void) {
@@ -332,7 +354,6 @@ void iridium_mo_send(void) {
 		/* go back to waiting */
 		iridium_mr_clear();
 		iridium_mo_clear();	
-		sbd.mo_state=0;
 	}
 }
 

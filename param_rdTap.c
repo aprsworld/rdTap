@@ -44,10 +44,11 @@ void write_default_param_file() {
 	config.serial_prefix='Z';
 	config.serial_number=9875;
 
-	config.live_interval=600;
+	config.live_interval=60;
 //	config.live_interval=10;
 
-
+	config.sbd_config=5; /* in slot 5 (closest to power connector) */
+	config.sbd_every=10;
 
 	/* write them so next time we use from EEPROM */
 	write_param_file();

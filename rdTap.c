@@ -12,7 +12,6 @@ typedef struct {
 	int16 startRegister;
 	int8  nRegisters;
 	int8  serialSpeed;    /* see rsTap.h for defines */
-	int8  sbdModulo;     /* when 0==(measurementNumber % sbdModulo), then we send via SBD */
 } struct_device;
 
 
@@ -57,6 +56,18 @@ typedef struct {
 	int16 serial_number;
 	
 	int16 live_interval;
+
+	/* Iridium SBD or other limited bandwidth transmission */
+	/* 0 is no SBD, 1...5 is SBD modem with power switch on CONTROL pin 1...5 */
+	int8  sbd_config;
+
+	/*	
+	every n'th live transmission we transmit the SBD data
+	Interval should be at least 10 minutes to allow for full retry cycle	
+	on cycle before transmit, we clear previous buffer and turn on modem 
+	*/
+	int16 sbd_every;
+
 } struct_config;
 
 /* global structures */
@@ -82,8 +93,29 @@ struct_config config;
 void deviceQuery(void) {
 	static int16 measurementNumber=0;
 	static int8  nCycles[DEV_MAX_N];
+	static int16 sbdCycle=0;
 	int8 n;
 	int16 l;
+
+	/* check if next cycle will be an SBD transmission. */
+	if ( 1 == sbdCycle ) {
+		/* next cycle will be an Iridium transmit cycle, so turn on modem and clear outgoing buffer */
+		iridium_on();
+		iridium_mo_clear();
+	}
+
+	/* check if we are going to be doing a SBD transmision */
+	if ( 0 == sbdCycle ) {
+		/* turn on modem in case it isn't already on */
+		iridium_on();
+		/* clear MO buffer */
+		iridium_mo_clear();
+
+		/* build header */
+		sbd.mo_buff[sbd.mo_length++]=make8(measurementNumber,1);
+		sbd.mo_buff[sbd.mo_length++]=make8(measurementNumber,0);
+	}
+
 
 //	fprintf(world,"# querying all enabled devices:\r\n");
 	for ( n=0 ; n<DEV_MAX_N ; n++ ) {
@@ -105,6 +137,10 @@ void deviceQuery(void) {
 
 		qbuff.deviceNumber=n;
 		qbuff.measurementNumber=measurementNumber;
+
+
+
+
 
 
 		if ( device[n].type <= DEV_TYPE_MODBUS_MAX ) {
@@ -185,33 +221,6 @@ void deviceQuery(void) {
 
 				live_send();
 
-				/* build SBD data payload */
-				if ( 0 == sbd.mo_length ) {
-					/* put header with measurement number if we don't already have it */
-					sbd.mo_buff[sbd.mo_length++]=make8(measurementNumber,1);
-					sbd.mo_buff[sbd.mo_length++]=make8(measurementNumber,0);
-				}
-
-				/* sub-header, 2 bytes, device number, and data length */
-				sbd.mo_buff[sbd.mo_length++]=n;
-				sbd.mo_buff[sbd.mo_length++]=qbuff.rResultLength;
-				/* body */
-				for ( l=0 ; l<qbuff.rResultLength ; l++ ) {
-					sbd.mo_buff[sbd.mo_length++]=qBuff.rResult[l];
-				}
-
-#if 0
-				/* stub to send message via SBD */
-				if ( 2 == n ) {
-					/* copy data to SBD transmit buffer */
-					memcpy(sbd.mo_buff, qBuff.rResult, qbuff.rResultLength);
-					sbd.mo_length=qbuff.rResultLength;
-					sbd.mo_state=1;
-				}
-#endif
-
-
-
 			}
 
 		} else {
@@ -220,14 +229,33 @@ void deviceQuery(void) {
 			fprintf(STREAM_WORLD,"# local device to query\r\n");
 #endif
 		}
+
+		/* Add data to SBD if this is an SBD cycle and we have valid data */
+		if ( 0 == sbdCycle && 0 == qbuff.rException ) {
+			/* sub-header, 2 bytes, device number, and data length */
+			sbd.mo_buff[sbd.mo_length++]=n;
+			sbd.mo_buff[sbd.mo_length++]=qbuff.rResultLength;
+		
+			/* sub-message */
+			for ( l=0 ; l<qbuff.rResultLength ; l++ ) {
+				sbd.mo_buff[sbd.mo_length++]=qBuff.rResult[l];
+			}
+		}
+
 	}
 
 	/* if we have data to send, then we sent it */
-	if ( sbd.mo_length > 0 ) {
+	if ( 0 == sbdCycle && sbd.mo_length > 0 ) {
 		sbd.mo_state=1;
 	}
 
 	measurementNumber++;
+
+	if ( 0 == sbdCycle ) {
+		sbdCycle=config.sbd_every;
+	} else {
+		sbdCycle--;
+	}
 }
 
 void init() {
@@ -344,18 +372,19 @@ void main(void) {
 	for ( ; ; ) {
 		restart_wdt();
 
-		if ( true ) {
+		if ( config.sbd_config ) {
 			/* iridium related */
+
 			/* read character if we don't have an unprocessed message and there is a character available */
 			if ( 0==sbd.mr_ready && uart_kbhit() ) {
 				iridium_getc();
 			}
 
 			if ( 0 != sbd.mo_state ) {
-				output_high(CTRL_4);
+				iridium_on(); /* probably not needed */
 				iridium_mo_send();
 			} else {
-				output_low(CTRL_4);
+				iridium_off(); /* probably not needed */
 			}
 		}
 
@@ -368,12 +397,6 @@ void main(void) {
 //			fprintf(STREAM_WORLD," done\r\n");
 
 
-#if 0
-			if ( 0 == sbd.mo_state ) {
-				/* stub to fire off an SBD test message */
-				sbd.mo_state=1;
-			}
-#endif
 		}
 #if 0
 		if ( query.buff_ready ) {
