@@ -15,6 +15,11 @@ void isr_10ms(void) {
 			li=0;
 			timers.now_poll=1;
 		}
+
+
+		if ( sbd.mo_sbdix_wait > 0 ) {
+			sbd.mo_sbdix_wait--;
+		}
 	}
 
 	if ( timers.world_timeout < 255 ) {

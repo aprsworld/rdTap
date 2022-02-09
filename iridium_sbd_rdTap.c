@@ -11,6 +11,8 @@ typedef struct {
 	int8 mo_state;
 	int8 mo_buff[272];
 	int16 mo_length;
+	int8 mo_try;
+	int8 mo_sbdix_wait;
 
 	/* "Mobile Terminated" messages from network to us */
 	int8 mt_state;
@@ -203,6 +205,12 @@ void iridium_send_mo(void) {
 
 	} else if ( 10 == sbd.mo_state ) {
 		/* send 'AT+SBDIX' to initiate Extended SBD Session */
+
+		if ( sbd.mo_try > 0 && 0 != sbd.mo_sbdix_wait ) {
+			/* external function decrements sbd.mo_sbdix_wait once per second */
+			return;
+		}
+
 		iridium_mr_clear();
 		printf(uart_putc,"AT+SBDIX\r");
 		sbd.mo_state++;
@@ -237,7 +245,15 @@ void iridium_send_mo(void) {
 			     'B'==sbd.mr_buff[2] && 'D'==sbd.mr_buff[3] &&
 			     'I'==sbd.mr_buff[4] && 'X'==sbd.mr_buff[5] 
 			) {
-				sbd.mo_state++;
+
+				/* so we got an +SBDIX response. If it is 0, 1, 2 we are okay to proceed and clear
+				buffer. If it is anything else, we need to wait and try again */
+				if ( ' '==sbd.mr_buff[7] && ( sbd.mr_buff[8] >= '0' && sbd.mr_buff[8] <= '2' ) ) {
+					sbd.mo_state++;
+					sbd.mo_try=0;
+				} else {
+					sbd.mo_try++;
+				}
 			}
 
 			iridium_mr_clear();				
@@ -252,7 +268,23 @@ void iridium_send_mo(void) {
 		
 			iridium_mr_clear();				
 		}
+
+		if ( 0 != sbd.mo_try ) {
+			/* need to try SBDIX again */
+			sbd.mo_state=10;
+			if ( 1 == sbd.mo_try || 2 == sbd.mo_try ) {
+				sbd.mo_sbdix_wait=2;
+			} else if ( 3 == sbd.mo_try || 4 == sbd.mo_try ) {
+				sbd.mo_sbdix_wait=20;
+			} else if ( 5 == sbd.mo_try ) {
+				sbd.mo_sbdix_wait=250;
+			} else {
+				/* give up and clear buffer */
+				sbd.mo_state=13;
+			}
+		}
 	} else if ( 13 == sbd.mo_state ) {
+
 		/* send 'AT+SBDD=0' to clear MO buffer */
 		iridium_mr_clear();
 		printf(uart_putc,"AT+SBDD0\r");

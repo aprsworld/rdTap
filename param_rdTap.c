@@ -44,7 +44,7 @@ void write_default_param_file() {
 	config.serial_prefix='Z';
 	config.serial_number=9875;
 
-	config.live_interval=1200;
+	config.live_interval=360;
 //	config.live_interval=10;
 
 
