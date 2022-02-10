@@ -317,13 +317,18 @@ void main(void) {
 	/* normal device startup */
 	init();
 
-	for ( i=0 ; i<10 ; i++ ) {
+	for ( i=0 ; i<150 ; i++ ) {
 		restart_wdt();
 
 		output_high(LED_GREEN);
 		delay_ms(100);
 		output_low(LED_GREEN);
 		delay_ms(100);
+
+		/* let Iridium pre-charge */
+		if ( i > 75 ) {
+			iridium_on();
+		}
 	}
 
 #if DEBUG_ASCII
@@ -396,7 +401,7 @@ void main(void) {
 
 
 		}
-#if 0
+#if 1
 		if ( query.buff_ready ) {
 			query_process();
 			query_reset();

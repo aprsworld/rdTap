@@ -41,14 +41,14 @@ void write_default_param_file() {
 	timers.led_on_green=150;
 //	fprintf(world,"# writing default parameters\r\n");
 
-	config.serial_prefix='Z';
-	config.serial_number=9875;
+	config.serial_prefix='A';
+	config.serial_number=4797;
 
 	config.live_interval=60;
 //	config.live_interval=10;
 
 	config.sbd_config=5; /* in slot 5 (closest to power connector) */
-	config.sbd_every=10;
+	config.sbd_every=1440; /* every 12 hours */
 
 	/* write them so next time we use from EEPROM */
 	write_param_file();
