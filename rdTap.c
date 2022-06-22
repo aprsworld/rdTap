@@ -1,4 +1,4 @@
-#define DEBUG_ASCII 0
+#define DEBUG_ASCII 1
 
 #include "rdTap.h"
 #include "worldDeviceTypes.h"
@@ -96,6 +96,9 @@ void deviceQuery(void) {
 	static int16 sbdCycle=0;
 	int8 n;
 	int16 l;
+#if DEBUG_ASCII
+	int8 i;
+#endif
 
 	/* check if next cycle will be an SBD transmission. */
 	if ( 1 == sbdCycle ) {

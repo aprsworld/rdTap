@@ -120,7 +120,7 @@ exception query_self_write_register(int16 address, int16 value) {
 				write_device_file();
 
 #if DEBUG_ASCII
-	fprintf(STREAM_WORLD,"# config.live_interval=%lu\r\n"config.live_interval);
+	fprintf(STREAM_WORLD,"# config.live_interval=%lu\r\n",config.live_interval);
 #endif
 
 				break;
