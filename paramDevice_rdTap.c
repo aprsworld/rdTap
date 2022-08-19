@@ -25,6 +25,7 @@ void write_default_device_file(void) {
 		device[i].type=DEV_TYPE_DISABLED;	
 	}
 
+#if 0
 	/* UAF Fairway */
 	/* dcswc_module_latching_contactor */
 	device[0].type=DEV_TYPE_I2C_READ_8;
@@ -52,6 +53,7 @@ void write_default_device_file(void) {
 	device[2].serialNumber=('A'<<16) + 4792; 
 	device[2].startRegister=0;
 	device[2].nRegisters=32;
+#endif
 
 	fprintf(STREAM_WORLD,"# write_device_file()\r\n");
 

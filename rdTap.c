@@ -1,4 +1,6 @@
-#define DEBUG_ASCII 1
+#define DEBUG_ASCII 0
+#define DEBUG_NPD   1
+
 
 #include "rdTap.h"
 #include "worldDeviceTypes.h"
@@ -334,8 +336,13 @@ void main(void) {
 		}
 	}
 
+#if DEBUG_NPD
+	fprintf(STREAM_WORLD,"# hello joe\r\n");
+	fprintf(STREAM_WORLD,"# '%s'\r\n",encrypt("hello joe"));	
+#endif
+
 #if DEBUG_ASCII
-	fprintf(STREAM_WORLD,"# rdTap %s (%c%lu)\r\n",
+	fprintf(STREAM_WORLD,"# rdTap hi joe %s (%c%lu)\r\n",
 		__DATE__,
 		config.serial_prefix,
 		config.serial_number
