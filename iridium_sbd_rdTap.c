@@ -101,6 +101,7 @@ void iridium_getc(void) {
 			&& 'R'==sbd.mr_buff[3] && 'I'==sbd.mr_buff[4] && 'N'==sbd.mr_buff[5] && 'G'==c ) {
 			sbd.ring_flag=1;
 			iridium_mr_clear();
+			return;
 		 }
 
 		if ( '\n' == c ) {
