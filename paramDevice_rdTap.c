@@ -55,6 +55,36 @@ void write_default_device_file(void) {
 	device[2].nRegisters=32;
 #endif
 
+#if 1
+	/* UVIC Fairway */
+	/* dcswc_module_latching_contactor */
+	device[0].type=DEV_TYPE_I2C_READ_8;
+	device[0].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[0].transmitEvery=1;
+	device[0].networkAddress=0x3e;
+	device[0].serialNumber=('A'<<16) + 4801; 
+	device[0].startRegister=0;
+	device[0].nRegisters=3*2; /* three two byte registers */
+
+	/* dcswc_module_voltage_current_counter */
+	device[1].type=DEV_TYPE_I2C_READ_8;
+	device[1].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[1].transmitEvery=1;
+	device[1].networkAddress=0x36;
+	device[1].serialNumber=('A'<<16) + 4802; 
+	device[1].startRegister=0;
+	device[1].nRegisters=32;
+
+	/* dcswc_module_voltage_current_counter */
+	device[2].type=DEV_TYPE_I2C_READ_8;
+	device[2].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[2].transmitEvery=1;
+	device[2].networkAddress=0x38;
+	device[2].serialNumber=('A'<<16) + 4803; 
+	device[2].startRegister=0;
+	device[2].nRegisters=32;
+#endif
+
 	fprintf(STREAM_WORLD,"# write_device_file()\r\n");
 
 	write_device_file();

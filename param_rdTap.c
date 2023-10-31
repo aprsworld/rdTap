@@ -42,13 +42,18 @@ void write_default_param_file() {
 //	fprintf(world,"# writing default parameters\r\n");
 
 	config.serial_prefix='A';
-	config.serial_number=4797;
+	config.serial_number=4800;
+		/* 
+			A4797 Fairway UAF (SBD in slot 5 closest to power connector)
+			A4800 Fairway UVic (SBD in slot 1)
+			A48?? Uvic Spare Fairway panel (SBD in slot 1)
+		*/
 
 	config.live_interval=60;
 //	config.live_interval=10;
 
-	config.sbd_config=5; /* in slot 5 (closest to power connector) */
-	config.sbd_every=300; /* every 5 minutes */
+	config.sbd_config=1; /* in slot 1 */
+	config.sbd_every=600; /* every 5 minutes */
 
 	/* write them so next time we use from EEPROM */
 	write_param_file();

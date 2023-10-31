@@ -1,4 +1,4 @@
-/* register map for SCI16IS740 */
+/* register map for SC16IS740 */
 #define UART_RHR          0x00 //  Recv Holding Register is 0x00 in READ Mode
 #define UART_THR          0x00 //  Xmit Holding Register is 0x00 in WRITE Mode
 #define UART_IER          0x01  // Interrupt Enable Register

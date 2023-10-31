@@ -338,7 +338,7 @@ void main(void) {
 
 #if DEBUG_NPD
 	fprintf(STREAM_WORLD,"# hello joe\r\n");
-	fprintf(STREAM_WORLD,"# '%s'\r\n",encrypt("hello joe"));	
+//	fprintf(STREAM_WORLD,"# '%s'\r\n",encrypt("hello joe"));	
 #endif
 
 #if DEBUG_ASCII
@@ -388,7 +388,20 @@ void main(void) {
 		restart_wdt();
 
 		if ( config.sbd_config ) {
-			/* iridium related */
+			/* iridium enabled */
+
+			if ( sbd.ring_flag ) {
+				fprintf(STREAM_WORLD,"# sbd.ring_flag=1\r\n");
+				sbd.ring_flag=0;
+			}
+
+
+#if 0
+			/* check if RING ALERT is active via the !CTS pin connected to RING ALERT line on the SBD modem */
+			if ( bit_test(uart_read(UART_MSR),4) ) {
+				sbd.ring_flag=1;
+			}
+#endif
 
 			/* read character if we don't have an unprocessed message and there is a character available */
 			if ( 0==sbd.mr_ready && uart_kbhit() ) {
