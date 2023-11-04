@@ -154,7 +154,8 @@ void iridium_sbdix_parse(void) {
 
 }
 
-void iridium_on(void) {
+#if 0
+void _iridium_on(void) {
 	/* turn power switch on */
 	switch ( config.sbd_config ) {
 		case 1: output_high(CTRL_0); break;
@@ -169,7 +170,7 @@ void iridium_on(void) {
 
 }
 
-void iridium_off(void) {
+void _iridium_off(void) {
 	switch ( config.sbd_config ) {
 		case 1: output_low(CTRL_0); break;
 		case 2: output_low(CTRL_1); break;
@@ -181,6 +182,7 @@ void iridium_off(void) {
 	/* set UART NRTS to turn on Iridium modem ON/OFF input */
 	uart_write(UART_MCR, 0b00000010);
 }
+#endif
 
 void iridium_mr_clear(void) {
 	sbd.mr_ready=0;
@@ -588,7 +590,7 @@ void iridium_mo_send(void) {
 		/* done sending */
 		/* download MT if needed? */
 		/* turn off modem */
-		iridium_off();
+//		iridium_off();
 
 		/* go back to waiting */
 		iridium_mr_clear();

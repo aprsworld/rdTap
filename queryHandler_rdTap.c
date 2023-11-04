@@ -328,6 +328,7 @@ void query_response(void) {
 	l=crc_chk_pass(0xFFFF,buff+1,sizeof(buff)-1);
 	l=crc_chk_pass(l,query.buff,query.resultLength);
 
+	output_high(CTRL_0);
 	/* send buff, result, CRC */
 	for ( i=0 ; i<sizeof(buff) ; i++ ) {
 		fputc(buff[i],STREAM_WORLD);
@@ -337,6 +338,8 @@ void query_response(void) {
 	}
 	fputc(make8(l,1),STREAM_WORLD);
 	fputc(make8(l,0),STREAM_WORLD);
+
+	output_low(CTRL_0);
 
 #if 0
 	fprintf(STREAM_WORLD,"# query result (query.resultLength=%u query.resultException=%u):\r\n",query.resultLength,query.resultException);
@@ -359,20 +362,26 @@ void query_process(void) {
 //	int8 i;
 	int16 lCRC;
 
-//	fprintf(STREAM_WORLD,"# in query_process()\r\n");
+#if DEBUG_ASCII
+	fprintf(STREAM_WORLD,"# in query_process()\r\n");
+#endif
 
 	query.packet_length=query.buff[4];
 	query.crc=make16(query.buff[query.packet_length-2],query.buff[query.packet_length-1]);	
 	lCRC = crc_chk_pass(0xFFFF,query.buff+1,query.packet_length-3);
 
 	if ( lCRC != query.crc ) {
-//		fprintf(STREAM_WORLD,"# CRC 0x%04lX != 0x%04lX (LOCAL)\r\n",query.crc,lCRC);
+#if DEBUG_ASCII
+		fprintf(STREAM_WORLD,"# CRC 0x%04lX != 0x%04lX (LOCAL)\r\n",query.crc,lCRC);
+#endif
 		return;
 	}
 
 
 	if ( 19 != query.buff[5] ) {
-//		fprintf(STREAM_WORLD,"# not query type 19 ... don't know how to handle!\r\n");
+#if DEBUG_ASCII
+		fprintf(STREAM_WORLD,"# not query type 19 ... don't know how to handle!\r\n");
+#endif
 		return;
 	}
 

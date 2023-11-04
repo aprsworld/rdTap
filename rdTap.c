@@ -1,5 +1,5 @@
-#define DEBUG_ASCII 0
-#define DEBUG_NPD   1
+#define DEBUG_ASCII 1
+#define MCP3208_ENABLED 0
 
 
 #include "rdTap.h"
@@ -105,14 +105,14 @@ void deviceQuery(void) {
 	/* check if next cycle will be an SBD transmission. */
 	if ( 1 == sbdCycle ) {
 		/* next cycle will be an Iridium transmit cycle, so turn on modem and clear outgoing buffer */
-		iridium_on();
+//		iridium_on();
 		iridium_mo_clear();
 	}
 
 	/* check if we are going to be doing a SBD transmision */
 	if ( 0 == sbdCycle ) {
 		/* turn on modem in case it isn't already on */
-		iridium_on();
+//		iridium_on();
 		/* clear MO buffer */
 		iridium_mo_clear();
 
@@ -301,13 +301,16 @@ void init() {
 	/* receive data from serial ports */
 	enable_interrupts(INT_RDA2);
 
+#if MCP3208_ENABLED
 	/* initialize MCP3208 external ADCs */
 	mcp3208_init();
+#endif
 
 
-	/* initialize SCI UART @ 19200 */
-	uart_init(6); /* 2=>57600 (tested, works) 6=>19200 */
-
+	if ( config.sbd_config ) {
+		/* initialize I2C UART for Iridium @ 19200 */
+		uart_init(6); /* 2=>57600 (tested, works) 6=>19200 */
+	}
 
 	delay_ms(14);
 
@@ -329,11 +332,6 @@ void main(void) {
 		delay_ms(100);
 		output_low(LED_GREEN);
 		delay_ms(100);
-
-		/* let Iridium pre-charge */
-		if ( i > 75 ) {
-			iridium_on();
-		}
 	}
 
 
@@ -447,14 +445,15 @@ void main(void) {
 
 
 		}
-#if 1
+
+		/* queries are messages send to us that we respond to */
 		if ( query.buff_ready ) {
+			fprintf(STREAM_WORLD,"# starting query_process()\r\n");
 			query_process();
+			fprintf(STREAM_WORLD,"# starting query_reset()\r\n");
 			query_reset();
 
 		}
-#endif
-
 	}
 }
 

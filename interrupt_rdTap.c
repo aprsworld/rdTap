@@ -43,6 +43,8 @@ void isr_10ms(void) {
 void isr_world(void) {
 	static int8 pre[5];
 
+
+
 	if ( query.buff_ready ) {
 		/* throw out data received while processing previous query */
 		fgetc(STREAM_WORLD);
@@ -64,6 +66,7 @@ void isr_world(void) {
 
 		/* packet addressed to us */
 		if ( '#'==pre[0] && config.serial_prefix==pre[1] && config.serial_number==make16(pre[2],pre[3]) ) {
+			output_high(CTRL_1);
 			query.buff[0]=pre[0];
 			query.buff[1]=pre[1];
 			query.buff[2]=pre[2];
@@ -75,6 +78,7 @@ void isr_world(void) {
 		query.buff[query.buff_pos++]=fgetc(STREAM_WORLD);
 
 		if ( query.buff_pos == query.buff[4] ) {
+			output_toggle(CTRL_1);
 			query.buff_ready=1;
 		}
 	}
