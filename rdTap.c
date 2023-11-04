@@ -390,12 +390,13 @@ void main(void) {
 		if ( config.sbd_config ) {
 			/* iridium enabled */
 
+			/* act on flag set by SBDRING in UART character processor or RING ALERT line */
 			if ( sbd.ring_flag ) {
 				fprintf(STREAM_WORLD,"# sbd.ring_flag=1\r\n");
 				sbd.ring_flag=0;
+
+				/* TODO: perform SBDIX to get message(s) */
 			}
-
-
 #if 0
 			/* check if RING ALERT is active via the !CTS pin connected to RING ALERT line on the SBD modem */
 			if ( bit_test(uart_read(UART_MSR),4) ) {
@@ -403,8 +404,31 @@ void main(void) {
 			}
 #endif
 
+			if ( '\0' != sbd.sbdix_response[0] ) {
+				/* 
+				if there is something in our +SBDIX response we should check if we have a message or need to 
+				get a message
+				*/
+
+				fprintf(STREAM_WORLD,"# sbd.sbdix_response='%s'\r\n",sbd.sbdix_response);
+				iridium_sbdix_parse();
+
+				/* clear the unparsed buffer so we don't get back here */
+				sbd.sbdix_response[0]='\0';
+
+				/* outgoing messages are processed in outgoing state machine */
+				if ( 1 == sbd.sbdix_mt_status ) {
+					/* TODO: transfer message from SBD mode to us */
+					sbd.sbdix_mt_status=0;
+				}
+
+				if ( sbd.sbdix_mt_queued > 0 ) {
+					/* perform another SBDIX to get the next message */
+				}
+			}
+
 			/* read character if we don't have an unprocessed message and there is a character available */
-			if ( 0==sbd.mr_ready && uart_kbhit() ) {
+			if ( 0==sbd.mr_ready && ! sbd.mr_disable && uart_kbhit() ) {
 				iridium_getc();
 			}
 

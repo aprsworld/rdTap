@@ -2,36 +2,156 @@
 
 typedef struct {
 	/* +SBDIX data from most recent */
-	int8 sbdix_mo_status;
-	int8 sbdix_mo_msn;
-	int8 sbdix_mt_status;
-	int8 sbdix_mt_msn;
-	int8 sbdix_mt_length;
-	int8 sbdix_mt_queued;
+	/* result from modem */
+	int8  sbdix_response[42];
+	/* parsed into */
+	int8  sbdix_mo_status;
+	int16 sbdix_mo_msn;
+	int8  sbdix_mt_status;
+	int16 sbdix_mt_msn;
+	int16 sbdix_mt_length;
+	int8  sbdix_mt_queued;
+
 
 	/* "Mobile Originated" message from us to network */
-	int8 mo_state;
-	int8 mo_buff[272];
+	int8  mo_state;
+	int8  mo_buff[272];
 	int16 mo_length;
-	int8 mo_try;
-	int8 mo_sbdix_wait;
+	int8  mo_try;
+	int8  mo_sbdix_wait;
 
 	/* "Mobile Terminated" messages from network to us */
-	int8 mt_state;
+	int8  mt_ready;
+	int8  mt_state;
+	int8  mt_buff[256];
+	int16 mt_length;
+	int16 mt_checksum;
 	
 	/* ring alert */
-	int8 ring_flag;
-	int8 ring_state;
+	int8  ring_flag;
+	int8  ring_state;
 
 	/* modem talking to us for status, AT commands, etc */
 	int8 mr_ready;          /* 1=> message ready for consumption */
 	int8 mr_buff[64];
 	int8 mr_length;
+	int8 mr_disable;
 
 } struct_iridium_sbd;
 
 struct_iridium_sbd sbd={0};
 
+int8 a_to_uint8(int8 *s) {
+   int8 value=0;
+
+   /* swallow white space before number */
+   while (isspace(*s)) {
+      s++;
+   }
+
+   /* read number while we have digit */
+   while (isdigit(*s)) {
+      value *= 10;
+      value += (*s-'0');
+      s++;
+   }
+
+   return value;
+}
+
+int16 a_to_uint16(int8 *s) {
+   int16 value=0;
+
+   /* swallow white space before number */
+   while (isspace(*s)) {
+      s++;
+   }
+
+   /* read number while we have digit */
+   while (isdigit(*s)) {
+      value *= 10;
+      value += (*s-'0');
+      s++;
+   }
+
+   return value;
+}
+
+void iridium_sbdix_parse(void) {
+	int8 *p;
+
+   /*
+    * Quick check of potential validity of response:
+    * a) valid response would need to be at least 24 characters
+    * +SBDIX: 0, 25, 0, 0, 0, 0
+    * 012345678901234567890123456789
+    *           1         2
+    * b) mo_status always starts at character 8
+    * */
+   if ( strlen(sbd.sbdix_response) < 24 || ! isdigit(sbd.sbdix_response[8] ) ) {
+      /* if not a digit, then we give up */
+      return;
+   }
+   sbd.sbdix_mo_status=a_to_uint8(sbd.sbdix_response+8);
+
+   /* mo_msn (with preceeding space) starts after comma */
+   p = strchr(sbd.sbdix_response+9,',');
+   if ( 0 == p ) {
+      /* not found */
+      return;
+   }
+   p++; /* swallow the ',' */
+   sbd.sbdix_mo_msn=a_to_uint16(p);
+
+
+   /* mt_status (with preceeding space) starts after comma */
+   p = strchr(p+1,',');
+   if ( 0 == p ) {
+      /* not found */
+      return;
+   }
+   p++; /* swallow the ',' */
+   sbd.sbdix_mt_status=a_to_uint8(p);
+
+   /* mt_msn (with preceeding space) starts after comma */
+   p = strchr(p+1,',');
+   if ( 0 == p ) {
+      /* not found */
+      return;
+   }
+   p++; /* swallow the ',' */
+   sbd.sbdix_mt_msn=a_to_uint16(p);
+
+   /* mt_length (with preceeding space) starts after comma */
+   p = strchr(p+1,',');
+   if ( 0 == p ) {
+      /* not found */
+      return;
+   }
+   p++; /* swallow the ',' */
+   sbd.sbdix_mt_length=a_to_uint16(p);
+
+   /* mt_queued (with preceeding space) starts after comma */
+   p = strchr(p+1,',');
+   if ( 0 == p ) {
+      /* not found */
+      return;
+   }
+   p++; /* swallow the ',' */
+   sbd.sbdix_mt_queued=a_to_uint8(p);
+
+#if 0
+
+   fprintf(stderr,"# sbdix_mo_status   = %d\n",sbdix_mo_status);
+   fprintf(stderr,"# sbdix_mo_msn      = %d\n",sbdix_mo_msn);
+   fprintf(stderr,"# sbdix_mt_status   = %d\n",sbdix_mt_status);
+   fprintf(stderr,"# sbdix_mt_msn      = %d\n",sbdix_mt_msn);
+   fprintf(stderr,"# sbdix_mt_length   = %d\n",sbdix_mt_length);
+   fprintf(stderr,"# sbdix_mt_queued   = %d\n",sbdix_mt_queued);
+
+#endif
+
+}
 
 void iridium_on(void) {
 	/* turn power switch on */
@@ -69,6 +189,11 @@ void iridium_mr_clear(void) {
 void iridium_mo_clear(void) {
 	sbd.mo_length=0;
 	sbd.mo_state=0;
+}
+
+void iridium_mt_clear(void) {
+	sbd.mt_length=0;
+	sbd.mt_state=0;
 }
 
 /* if we have characters to be received, this function reads them */
@@ -382,6 +507,12 @@ void iridium_mo_send(void) {
 			     'B'==sbd.mr_buff[2] && 'D'==sbd.mr_buff[3] &&
 			     'I'==sbd.mr_buff[4] && 'X'==sbd.mr_buff[5] 
 			) {
+				/* copy +SBDIX result to seperate buffer so it can be further processed for message downloading */
+				if ( '\0' != sbd.sbdix_response[0] ) {
+					strncpy(sbd.sbdix_response,sbd.mr_buff,sizeof(sbd.sbdix_response)-1);
+					sbd.sbdix_response[sizeof(sbd.sbdix_response)-1]='\0';
+				}
+
 
 				/* so we got an +SBDIX response. If it is 0, 1, 2 we are okay to proceed and clear
 				buffer. If it is anything else, we need to wait and try again */
@@ -462,5 +593,131 @@ void iridium_mo_send(void) {
 		iridium_mr_clear();
 		iridium_mo_clear();	
 	}
+}
+
+void iridium_mt_receive(void) {
+	int8 c;
+	static int16 l;
+	static int16 checksum;
+
+	if ( 0 == sbd.mt_state ) {
+		/* nothing to do */
+		return;
+
+	} else if ( 1 == sbd.mt_state ) {
+		/* send 'ATE0' to turn off modem echo for subsequent commands */
+		iridium_mr_clear();
+		printf(uart_putc,"ATE0\r");
+		sbd.mt_state++;
+		/* TODO set response timeout */
+
+	} else if ( 2 == sbd.mt_state ) {
+		/* receive response 'OK' */
+
+		if ( 1 == sbd.mr_ready ) {
+			if ( 'O'==sbd.mr_buff[0] && 'K'==sbd.mr_buff[1] ) {
+				sbd.mt_state++;
+			} 
+			/* clear mr because either we got OK or we got a bad response */
+			iridium_mr_clear();				
+		}	
+
+	} else if ( 3 == sbd.mt_state ) {
+		/* send 'AT&K0' to turn off flow control */
+		iridium_mr_clear();
+		printf(uart_putc,"AT&K0\r");
+		sbd.mo_state++;
+		/* TODO set response timeout */
+
+	} else if ( 4 == sbd.mt_state ) {
+		/* receive response 'OK' */
+
+		if ( 1 == sbd.mr_ready ) {
+			if ( 'O'==sbd.mr_buff[0] && 'K'==sbd.mr_buff[1] ) {
+				sbd.mt_state++;
+			} 
+			/* clear mr because either we got OK or we got a bad response */
+			iridium_mr_clear();	
+		}	
+	} else if ( 5 == sbd.mt_state ) {
+		/* send 'AT+SBDMTA=1' to turn on ring alerts */
+		iridium_mr_clear();
+		printf(uart_putc,"AT+SBDMTA=1\r");
+		sbd.mt_state++;
+		/* TODO set response timeout */
+
+	} else if ( 6 == sbd.mt_state ) {
+		/* receive response 'OK' */
+		if ( 1 == sbd.mr_ready ) {
+			if ( 'O'==sbd.mr_buff[0] && 'K'==sbd.mr_buff[1] ) {
+				sbd.mt_state++;
+			} 
+			/* clear mr because either we got OK or we got a bad response */
+			iridium_mr_clear();	
+		}
+	} else if ( 7 == sbd.mt_state ) {
+		/* TODO do we want to clear buffer first? */
+
+		/* send 'AT+SBDRB' to tell modem to send us our MT */
+		iridium_mr_clear();
+		sbd.mr_disable=1; /* switch iridum character receiver to binary */
+		printf(uart_putc,"AT+SBDRB\r");
+		sbd.mt_state++;
+		/* TODO set response timeout */
+
+	} else if ( 8 == sbd.mt_state ) {
+		/* receive first byte of length */
+		if ( ! uart_kbhit() ) {
+			/* no character available */
+			return;
+		}
+	
+		sbd.mt_length=make16(uart_getc(),0);
+		sbd.mt_state++;
+	} else if ( 8 == sbd.mt_state ) {
+		/* receive second byte of length */
+		if ( ! uart_kbhit() ) {
+			/* no character available */
+			return;
+		}
+	
+		sbd.mt_length += uart_getc();
+		sbd.mt_state++;
+
+		checksum=0;
+		l=0;
+	} else if ( 9 == sbd.mt_state ) {
+		/* receive MT length of characters and calculate checksum */
+		if ( l == sbd.mt_length ) {
+			/* received right number of characters */
+			sbd.mt_state++;
+		}
+
+		c = uart_getc();
+		sbd.mt_buff[l]=c;
+		checksum += c;
+		l++;
+		fprintf(STREAM_WORLD,"# mt_buff[%lu]=%c\r\n",l,sbd.mt_buff[l]);
+
+	} else if ( 10 == sbd.mt_state ) {
+		/* high byte of checksum */
+		l=make16(uart_getc(),0);
+		sbd.mt_state++;
+	} else if ( 11 == sbd.mt_state ) {
+		/* low byte of checksum */
+		l += uart_getc();
+		sbd.mt_state++;
+
+		sbd.mr_disable=0;
+	} else if ( 12 == sbd.mt_State ) {
+		/* compare local and remote checksum */
+		fprintf(STREAM_WORLD,"# l=%lu r=%lu\r\n",checksum,l);
+
+		if ( checksum == l ) {
+			/* checksums matched, we have a good message! */
+			sbd.mt_ready=1;
+		}
+		sbd.mt_state=0;
+	} 
 }
 
