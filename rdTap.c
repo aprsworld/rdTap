@@ -336,13 +336,9 @@ void main(void) {
 		}
 	}
 
-#if DEBUG_NPD
-	fprintf(STREAM_WORLD,"# hello joe\r\n");
-//	fprintf(STREAM_WORLD,"# '%s'\r\n",encrypt("hello joe"));	
-#endif
 
 #if DEBUG_ASCII
-	fprintf(STREAM_WORLD,"# rdTap hi joe %s (%c%lu)\r\n",
+	fprintf(STREAM_WORLD,"# rdTap %s (%c%lu)\r\n",
 		__DATE__,
 		config.serial_prefix,
 		config.serial_number
@@ -394,8 +390,6 @@ void main(void) {
 			if ( sbd.ring_flag ) {
 				fprintf(STREAM_WORLD,"# sbd.ring_flag=1\r\n");
 				sbd.ring_flag=0;
-
-				/* TODO: perform SBDIX to get message(s) */
 			}
 #if 0
 			/* check if RING ALERT is active via the !CTS pin connected to RING ALERT line on the SBD modem */
@@ -404,36 +398,35 @@ void main(void) {
 			}
 #endif
 
-			if ( '\0' != sbd.sbdix_response[0] ) {
+			if ( '\0' != sbd.sbdix_response[0] && 0 == sbd.mo_state ) {
 				/* 
 				if there is something in our +SBDIX response we should check if we have a message or need to 
-				get a message
+				get a message. But wait until MO sending is done (state machine idle).
 				*/
 
 				fprintf(STREAM_WORLD,"# sbd.sbdix_response='%s'\r\n",sbd.sbdix_response);
-				iridium_sbdix_parse();
+ 				iridium_sbdix_parse();
 
 				/* clear the unparsed buffer so we don't get back here */
 				sbd.sbdix_response[0]='\0';
 
-				/* outgoing messages are processed in outgoing state machine */
-				if ( 1 == sbd.sbdix_mt_status ) {
-					/* TODO: transfer message from SBD mode to us */
-					sbd.sbdix_mt_status=0;
-				}
-
 				if ( sbd.sbdix_mt_queued > 0 ) {
-					/* perform another SBDIX to get the next message */
+					/* TODO: perform another SBDIX to get the next message */
 				}
 			}
 
-			/* read character if we don't have an unprocessed message and there is a character available */
+			/* read character into MR if we don't have an unprocessed message and there is a character available */
 			if ( 0==sbd.mr_ready && ! sbd.mr_disable && uart_kbhit() ) {
 				iridium_getc();
 			}
 
-			if ( 0 != sbd.mo_state ) {
-				iridium_on(); /* probably not needed */
+			/* download message from SBD modem */
+			if ( 1 == sbd.sbdix_mt_status ) {
+				iridium_mt_receive();
+			}
+
+			/* send messages to SBD modem */
+			if ( 0 != sbd.mo_state && 0 == sbd.mt_state ) {
 				iridium_mo_send();
 			}
 		}

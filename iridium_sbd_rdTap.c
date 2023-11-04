@@ -36,6 +36,7 @@ typedef struct {
 	int8 mr_buff[64];
 	int8 mr_length;
 	int8 mr_disable;
+//	int8 mr_receiver; /* 0 => iridum_mt_receive(), 1=> iridium_mo_send() */
 
 } struct_iridium_sbd;
 
@@ -89,7 +90,7 @@ void iridium_sbdix_parse(void) {
     * b) mo_status always starts at character 8
     * */
    if ( strlen(sbd.sbdix_response) < 24 || ! isdigit(sbd.sbdix_response[8] ) ) {
-      /* if not a digit, then we give up */
+      /* if not a digit or too short, then we give up */
       return;
    }
    sbd.sbdix_mo_status=a_to_uint8(sbd.sbdix_response+8);
@@ -140,14 +141,14 @@ void iridium_sbdix_parse(void) {
    p++; /* swallow the ',' */
    sbd.sbdix_mt_queued=a_to_uint8(p);
 
-#if 0
+#if 1
 
-   fprintf(stderr,"# sbdix_mo_status   = %d\n",sbdix_mo_status);
-   fprintf(stderr,"# sbdix_mo_msn      = %d\n",sbdix_mo_msn);
-   fprintf(stderr,"# sbdix_mt_status   = %d\n",sbdix_mt_status);
-   fprintf(stderr,"# sbdix_mt_msn      = %d\n",sbdix_mt_msn);
-   fprintf(stderr,"# sbdix_mt_length   = %d\n",sbdix_mt_length);
-   fprintf(stderr,"# sbdix_mt_queued   = %d\n",sbdix_mt_queued);
+   fprintf(STREAM_WORLD,"# sbdix_mo_status   = %d\n",sbd.sbdix_mo_status);
+   fprintf(STREAM_WORLD,"# sbdix_mo_msn      = %lu\n",sbd.sbdix_mo_msn);
+   fprintf(STREAM_WORLD,"# sbdix_mt_status   = %d\n",sbd.sbdix_mt_status);
+   fprintf(STREAM_WORLD,"# sbdix_mt_msn      = %lu\n",sbd.sbdix_mt_msn);
+   fprintf(STREAM_WORLD,"# sbdix_mt_length   = %lu\n",sbd.sbdix_mt_length);
+   fprintf(STREAM_WORLD,"# sbdix_mt_queued   = %d\n",sbd.sbdix_mt_queued);
 
 #endif
 
@@ -508,7 +509,7 @@ void iridium_mo_send(void) {
 			     'I'==sbd.mr_buff[4] && 'X'==sbd.mr_buff[5] 
 			) {
 				/* copy +SBDIX result to seperate buffer so it can be further processed for message downloading */
-				if ( '\0' != sbd.sbdix_response[0] ) {
+				if ( '\0' == sbd.sbdix_response[0] ) {
 					strncpy(sbd.sbdix_response,sbd.mr_buff,sizeof(sbd.sbdix_response)-1);
 					sbd.sbdix_response[sizeof(sbd.sbdix_response)-1]='\0';
 				}
@@ -600,15 +601,11 @@ void iridium_mt_receive(void) {
 	static int16 l;
 	static int16 checksum;
 
-	if ( 0 == sbd.mt_state ) {
-		/* nothing to do */
-		return;
-
-	} else if ( 1 == sbd.mt_state ) {
+	if ( sbd.mt_state <= 1 ) {
 		/* send 'ATE0' to turn off modem echo for subsequent commands */
 		iridium_mr_clear();
 		printf(uart_putc,"ATE0\r");
-		sbd.mt_state++;
+		sbd.mt_state = 2;
 		/* TODO set response timeout */
 
 	} else if ( 2 == sbd.mt_state ) {
@@ -626,7 +623,7 @@ void iridium_mt_receive(void) {
 		/* send 'AT&K0' to turn off flow control */
 		iridium_mr_clear();
 		printf(uart_putc,"AT&K0\r");
-		sbd.mo_state++;
+		sbd.mt_state++;
 		/* TODO set response timeout */
 
 	} else if ( 4 == sbd.mt_state ) {
@@ -688,6 +685,11 @@ void iridium_mt_receive(void) {
 		l=0;
 	} else if ( 9 == sbd.mt_state ) {
 		/* receive MT length of characters and calculate checksum */
+		if ( ! uart_kbhit() ) {
+			/* no character available */
+			return;
+		}
+
 		if ( l == sbd.mt_length ) {
 			/* received right number of characters */
 			sbd.mt_state++;
@@ -697,13 +699,22 @@ void iridium_mt_receive(void) {
 		sbd.mt_buff[l]=c;
 		checksum += c;
 		l++;
-		fprintf(STREAM_WORLD,"# mt_buff[%lu]=%c\r\n",l,sbd.mt_buff[l]);
 
 	} else if ( 10 == sbd.mt_state ) {
+		if ( ! uart_kbhit() ) {
+			/* no character available */
+			return;
+		}
+
 		/* high byte of checksum */
 		l=make16(uart_getc(),0);
 		sbd.mt_state++;
 	} else if ( 11 == sbd.mt_state ) {
+		if ( ! uart_kbhit() ) {
+			/* no character available */
+			return;
+		}
+
 		/* low byte of checksum */
 		l += uart_getc();
 		sbd.mt_state++;
@@ -716,7 +727,14 @@ void iridium_mt_receive(void) {
 		if ( checksum == l ) {
 			/* checksums matched, we have a good message! */
 			sbd.mt_ready=1;
+
+			for ( l=0 ; l<sbd.mt_length ; l++ ) {
+				fprintf(STREAM_WORLD,"# mt_buff[%lu]=%c\r\n",l,sbd.mt_buff[l]);
+			}
 		}
+
+		/* message has processed */
+		sbd.sbdix_mt_status=0;
 		sbd.mt_state=0;
 	} 
 }
