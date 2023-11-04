@@ -53,7 +53,7 @@ void write_default_param_file() {
 //	config.live_interval=10;
 
 	config.sbd_config=1; /* in slot 1 */
-	config.sbd_every=600; /* every 5 minutes */
+	config.sbd_every=60; /* every 1 hour */
 
 	/* write them so next time we use from EEPROM */
 	write_param_file();
