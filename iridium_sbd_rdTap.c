@@ -671,7 +671,7 @@ void iridium_mt_receive(void) {
 	
 		sbd.mt_length=make16(uart_getc(),0);
 		sbd.mt_state++;
-	} else if ( 8 == sbd.mt_state ) {
+	} else if ( 9 == sbd.mt_state ) {
 		/* receive second byte of length */
 		if ( ! uart_kbhit() ) {
 			/* no character available */
@@ -683,16 +683,17 @@ void iridium_mt_receive(void) {
 
 		checksum=0;
 		l=0;
-	} else if ( 9 == sbd.mt_state ) {
+	} else if ( 10 == sbd.mt_state ) {
 		/* receive MT length of characters and calculate checksum */
 		if ( ! uart_kbhit() ) {
 			/* no character available */
 			return;
 		}
 
-		if ( l == sbd.mt_length ) {
-			/* received right number of characters */
+		if ( 0 == sbd.mt_length ) {
+			/* zero byte message skips this state */
 			sbd.mt_state++;
+			return;
 		}
 
 		c = uart_getc();
@@ -700,7 +701,12 @@ void iridium_mt_receive(void) {
 		checksum += c;
 		l++;
 
-	} else if ( 10 == sbd.mt_state ) {
+		if ( l == sbd.mt_length ) {
+			/* received right number of characters */
+			sbd.mt_state++;
+		}
+
+	} else if ( 11 == sbd.mt_state ) {
 		if ( ! uart_kbhit() ) {
 			/* no character available */
 			return;
@@ -709,7 +715,7 @@ void iridium_mt_receive(void) {
 		/* high byte of checksum */
 		l=make16(uart_getc(),0);
 		sbd.mt_state++;
-	} else if ( 11 == sbd.mt_state ) {
+	} else if ( 12 == sbd.mt_state ) {
 		if ( ! uart_kbhit() ) {
 			/* no character available */
 			return;
@@ -720,7 +726,7 @@ void iridium_mt_receive(void) {
 		sbd.mt_state++;
 
 		sbd.mr_disable=0;
-	} else if ( 12 == sbd.mt_State ) {
+	} else if ( 13 == sbd.mt_State ) {
 		/* compare local and remote checksum */
 		fprintf(STREAM_WORLD,"# l=%lu r=%lu\r\n",checksum,l);
 

@@ -429,6 +429,12 @@ void main(void) {
 			if ( 0 != sbd.mo_state && 0 == sbd.mt_state ) {
 				iridium_mo_send();
 			}
+
+			if ( 1 == sbd.mt_ready ) {
+				fprintf(STREAM_WORLD,"# mt message received!\r\n");
+				/* TODO: send to message parser */
+				sbd.mt_ready=0;
+			} 
 		}
 
 
