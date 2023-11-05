@@ -1,56 +1,96 @@
 /* this will do an arbitrary query to some other device on the network */
 void query_other(void) {
 	int8 parseType;
+	int8 i;
 
-//	fprintf(STREAM_WORLD,"# query_other()\r\n");
-//	fprintf(STREAM_WORLD,"# query function=%lu\r\n",query.function);
+#if DEBUG_ASCII
+	fprintf(STREAM_WORLD,"# query_other()\r\n");
+	fprintf(STREAM_WORLD,"# query function=%lu\r\n",query.function);
+#endif
 
-	switch ( query.function ) {
-		case DEV_TYPE_DISABLED:
-			return;
-		case DEV_TYPE_MODBUS_1: /* not very well tested */
-			query.resultException=modbus_read_coils(query.network_address, query.start_address, query.n_words);
-			parseType=1;
-			break;
-		case DEV_TYPE_MODBUS_2: /* not very well tested */
-			query.resultException=modbus_read_discrete_input(query.network_address, query.start_address, query.n_words);
-			parseType=1;
-			break;
-		case DEV_TYPE_MODBUS_3: /* tested */
-			query.resultException=modbus_read_holding_registers(query.network_address, query.start_address, query.n_words);
-			parseType=1;
-			break;
-		case DEV_TYPE_MODBUS_4: /* tested */
-			query.resultException=modbus_read_input_registers(query.network_address, query.start_address, query.n_words);
-			parseType=1;
-			break;
-		case DEV_TYPE_MODBUS_5: /* tested */
-			query.resultException=modbus_write_single_coil(query.network_address, query.start_address, query.buff[query.data_start_offset]);
-			parseType=2;
-			break;
-		case DEV_TYPE_MODBUS_6: /* tested */
-			query.resultException=modbus_write_single_register(query.network_address, query.start_address, 
-				make16(query.buff[query.data_start_offset],query.buff[query.data_start_offset+1]));
-			parseType=2;
-			return;
-		case DEV_TYPE_MODBUS_16: /* tested ... endian issues lead to having to send data in a (backwards?) order */
-			query.resultException=modbus_write_multiple_registers_flip(query.network_address, query.start_address, 
-				query.n_words,&query.buff+query.data_start_offset
-			);
+	if ( query.function <= DEV_TYPE_MODBUS_MAX ) {
+		/* modbus device type */
+		switch ( query.function ) {
+			case DEV_TYPE_DISABLED:
+				return;
+			case DEV_TYPE_MODBUS_1: /* not very well tested */
+				query.resultException=modbus_read_coils(query.network_address, query.start_address, query.n_words);
+				parseType=1;
+				break;
+			case DEV_TYPE_MODBUS_2: /* not very well tested */
+				query.resultException=modbus_read_discrete_input(query.network_address, query.start_address, query.n_words);
+				parseType=1;
+				break;
+			case DEV_TYPE_MODBUS_3: /* tested */
+				query.resultException=modbus_read_holding_registers(query.network_address, query.start_address, query.n_words);
+				parseType=1;
+				break;
+			case DEV_TYPE_MODBUS_4: /* tested */
+				query.resultException=modbus_read_input_registers(query.network_address, query.start_address, query.n_words);
+				parseType=1;
+				break;
+			case DEV_TYPE_MODBUS_5: /* tested */
+				query.resultException=modbus_write_single_coil(query.network_address, query.start_address, query.buff[query.data_start_offset]);
+				parseType=2;
+				break;
+			case DEV_TYPE_MODBUS_6: /* tested */
+				query.resultException=modbus_write_single_register(query.network_address, query.start_address, 
+					make16(query.buff[query.data_start_offset],query.buff[query.data_start_offset+1]));
+				parseType=2;
+				return;
+			case DEV_TYPE_MODBUS_16: /* tested ... endian issues lead to having to send data in a (backwards?) order */
+				query.resultException=modbus_write_multiple_registers_flip(query.network_address, query.start_address, 
+					query.n_words,&query.buff+query.data_start_offset
+				);
+				parseType=2;
+				return;
+		}	
 
-			parseType=2;
-			return;
-	}	
+		/* Modbus query performed above. */
+		/* no error, copy data to buffer to send response */
+		if ( 1==parseType && 0==query.resultException ) {
+			query.resultLength=modbus_rx.len-1;
+			memcpy(&query.buff,&modbus_rx.data[1],modbus_rx.len-1); 
+		} else if ( 2==parseType && 0==query.resultException ) {
+			/* return the value of the coil we wrote */
+			query.resultLength=2;
+			memcpy(&query.buff,&modbus_rx.data[3],2); 
+		}
+	} else if ( query.function <= DEV_TYPE_I2C_MAX ) {
+		fprintf(STREAM_WORLD,"# query_other for I2C network_adress=%lu, start_address=%lu n_words=%u\r\n",
+			query.network_address,
+			query.start_address,
+			query.n_words
+		);
 
-	/* Modbus query performed above. */
-	/* no error, copy data to buffer to send response */
-	if ( 1==parseType && 0==query.resultException ) {
-		query.resultLength=modbus_rx.len-1;
-		memcpy(&query.buff,&modbus_rx.data[1],modbus_rx.len-1); 
-	} else if ( 2==parseType && 0==query.resultException ) {
-		/* return the value of the coil we wrote */
-		query.resultLength=2;
-		memcpy(&query.buff,&modbus_rx.data[3],2); 
+		if ( DEV_TYPE_I2C_READ_8 == query.function ) {
+			fprintf(STREAM_WORLD,"# DEV_TYPE_I2C_READ_8\r\n");
+			/* start a read at start address then just read a byte at a time. n_words is actually bytes */
+			i2c_buff_read(query.network_address, query.start_address, query.buff, query.n_words);
+			query.resultLength = query.n_words; /* in bytes */
+			query.resultException=0;
+		} else if ( DEV_TYPE_I2C_WRITE_16 == query.function ) {
+			fprintf(STREAM_WORLD,"# DEV_TYPE_I2C_WRITE_16\r\n");
+
+			for ( i=0 ; i<query.n_words ; i++ ) {
+				fprintf(STREAM_WORLD,"# writing 0x%04lx to I2C device 0x%02x at address %lu\r\n",
+					make16(query.buff[query.data_start_offset+i*2],query.buff[query.data_start_offset+i*2+1]),
+					query.network_address,
+					(query.start_address+i*2)
+				);
+				// void i2c_register_write16(int8 i2c_address, int8 regaddr, int16 value) {
+				i2c_register_write16(
+					query.network_address,
+					(query.start_address+i*2),
+					make16(query.buff[query.data_start_offset+i*2],query.buff[query.data_start_offset+i*2+1])
+				);
+
+			}
+
+		} else {
+			fprintf(STREAM_WORLD,"# un-implemented I2C query function\r\n");
+		}
+
 	}
 }
 
@@ -64,7 +104,7 @@ exception query_self_write_register(int16 address, int16 value) {
 	int16 last;
 
 #if DEBUG_ASCII
-	fprintf(STREAM_WORLD,"# wr address=%lu value=%lu\r\n",address,value);
+	fprintf(STREAM_WORLD,"# query_self_write_register address=%lu value=%lu\r\n",address,value);
 #endif
 
 	/* if we have been unlocked, then we can modify serial number */
@@ -194,6 +234,16 @@ exception query_self_read_register(int16 address, int8 n) {
 	query.buff[n+1]=make8(result,0);
 	query.resultLength += 2;
 
+#if DEBUG_ASCII
+	fprintf(STREAM_WORLD,"# query_self_read_register(address=%lu, n=%u, result=%lu, query.resultLength=%u)\r\n",
+		address,
+		n,
+		result,
+		query.resultLength
+	);
+#endif
+
+
 	return 0;
 }
 
@@ -201,9 +251,19 @@ exception query_self_read_registers(int16 address, int8 nRegisters) {
 	int8 i;
 	exception e=0;
 
+#if DEBUG_ASCII
+	fprintf(STREAM_WORLD,"# query_self_read_registers (address=%lu, nRegisters=%u)\r\n",address,nRegisters);
+#endif
+
 	for ( i=0 ; i<nRegisters && 0==e ; i++ ) {
 		e=query_self_read_register(address+i,i*2);
 	}
+
+
+#if DEBUG_ASCII
+	fprintf(STREAM_WORLD,"# query_self_read_registers returning e=%u\r\n",e);
+#endif
+
 
 	return e;
 }
@@ -212,7 +272,11 @@ exception query_self_read_registers(int16 address, int8 nRegisters) {
 
 
 void query_self(void) {
-//	fprintf(STREAM_WORLD,"# query_self()\r\n");
+	fprintf(STREAM_WORLD,"# query_self( query.function=%lu, query.start_address=%lu, query.n_words=%u)\r\n",
+		query.function,
+		query.start_address,
+		query.n_words
+	);
 
 	query.resultLength=0;
 
@@ -339,6 +403,8 @@ void query_response(void) {
 	fputc(make8(l,1),STREAM_WORLD);
 	fputc(make8(l,0),STREAM_WORLD);
 
+
+	delay_ms(10);
 	output_low(CTRL_0);
 
 #if 0
