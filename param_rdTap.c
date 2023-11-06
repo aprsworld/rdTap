@@ -49,11 +49,12 @@ void write_default_param_file() {
 			A48?? Uvic Spare Fairway panel (SBD in slot 1)
 		*/
 
-	config.live_interval=60;
-//	config.live_interval=10;
+	/* data to internet on STREAM_WORLD port */
+	config.live_interval=60; 
 
-	config.sbd_config=1; /* in slot 1 */
-	config.sbd_every=60; /* every 1 hour */
+	/* Iridium SBD requires dcswc_module_rockblock which provides an I2C UART */
+	config.sbd_config=1; /* physical slot for module. Used for power control */
+	config.sbd_every=30; /* minutes. 60=once per hour, 720=once per 12 hour */
 
 	/* write them so next time we use from EEPROM */
 	write_param_file();

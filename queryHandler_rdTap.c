@@ -94,6 +94,9 @@ void query_other(void) {
 					make16(query.buff[query.data_start_offset+i*2],query.buff[query.data_start_offset+i*2+1])
 				);
 
+				query.resultLength = 0; /* in bytes */
+				query.resultException=0;
+
 			}
 
 		} else {
