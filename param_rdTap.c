@@ -42,11 +42,11 @@ void write_default_param_file() {
 //	fprintf(world,"# writing default parameters\r\n");
 
 	config.serial_prefix='A';
-	config.serial_number=4800;
+	config.serial_number=4810;
 		/* 
 			A4797 Fairway UAF (SBD in slot 5 closest to power connector)
 			A4800 Fairway UVic (SBD in slot 1)
-			A48?? Uvic Spare Fairway panel (SBD in slot 1)
+			A4810 Uvic Spare Fairway panel (SBD in slot 1)
 		*/
 
 	/* data to internet on STREAM_WORLD port */
