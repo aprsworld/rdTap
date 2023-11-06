@@ -141,15 +141,13 @@ void iridium_sbdix_parse(void) {
    p++; /* swallow the ',' */
    sbd.sbdix_mt_queued=a_to_uint8(p);
 
-#if 1
-
+#if DEBUG_ASCII
    fprintf(STREAM_WORLD,"# sbdix_mo_status   = %d\n",sbd.sbdix_mo_status);
    fprintf(STREAM_WORLD,"# sbdix_mo_msn      = %lu\n",sbd.sbdix_mo_msn);
    fprintf(STREAM_WORLD,"# sbdix_mt_status   = %d\n",sbd.sbdix_mt_status);
    fprintf(STREAM_WORLD,"# sbdix_mt_msn      = %lu\n",sbd.sbdix_mt_msn);
    fprintf(STREAM_WORLD,"# sbdix_mt_length   = %lu\n",sbd.sbdix_mt_length);
    fprintf(STREAM_WORLD,"# sbdix_mt_queued   = %d\n",sbd.sbdix_mt_queued);
-
 #endif
 
 }
@@ -730,15 +728,19 @@ void iridium_mt_receive(void) {
 		sbd.mr_disable=0;
 	} else if ( 13 == sbd.mt_State ) {
 		/* compare local and remote checksum */
+#if DEBUG_ASCII
 		fprintf(STREAM_WORLD,"# l=%lu r=%lu\r\n",checksum,l);
+#endif
 
 		if ( checksum == l ) {
 			/* checksums matched, we have a good message! */
 			sbd.mt_ready=1;
 
+#if DEBUG_ASCII
 			for ( l=0 ; l<sbd.mt_length ; l++ ) {
 				fprintf(STREAM_WORLD,"# mt_buff[%lu]=%c\r\n",l,sbd.mt_buff[l]);
 			}
+#endif
 		}
 
 		/* message has processed */

@@ -57,28 +57,37 @@ void query_other(void) {
 			memcpy(&query.buff,&modbus_rx.data[3],2); 
 		}
 	} else if ( query.function <= DEV_TYPE_I2C_MAX ) {
+#if DEBUG_ASCII
 		fprintf(STREAM_WORLD,"# query_other for I2C network_adress=%lu, start_address=%lu n_words=%u\r\n",
 			query.network_address,
 			query.start_address,
 			query.n_words
 		);
+#endif
 
 		if ( DEV_TYPE_I2C_READ_8 == query.function ) {
+#if DEBUG_ASCII
 			fprintf(STREAM_WORLD,"# DEV_TYPE_I2C_READ_8\r\n");
+#endif
+
 			/* start a read at start address then just read a byte at a time. n_words is actually bytes */
 			i2c_buff_read(query.network_address, query.start_address, query.buff, query.n_words);
 			query.resultLength = query.n_words; /* in bytes */
 			query.resultException=0;
 		} else if ( DEV_TYPE_I2C_WRITE_16 == query.function ) {
+#if DEBUG_ASCII
 			fprintf(STREAM_WORLD,"# DEV_TYPE_I2C_WRITE_16\r\n");
+#endif
 
 			for ( i=0 ; i<query.n_words ; i++ ) {
+#if DEBUG_ASCII
 				fprintf(STREAM_WORLD,"# writing 0x%04lx to I2C device 0x%02x at address %lu\r\n",
 					make16(query.buff[query.data_start_offset+i*2],query.buff[query.data_start_offset+i*2+1]),
 					query.network_address,
 					(query.start_address+i*2)
 				);
-				// void i2c_register_write16(int8 i2c_address, int8 regaddr, int16 value) {
+#endif
+
 				i2c_register_write16(
 					query.network_address,
 					(query.start_address+i*2),
@@ -88,7 +97,9 @@ void query_other(void) {
 			}
 
 		} else {
+#if DEBUG_ASCII
 			fprintf(STREAM_WORLD,"# un-implemented I2C query function\r\n");
+#endif
 		}
 
 	}
@@ -272,11 +283,13 @@ exception query_self_read_registers(int16 address, int8 nRegisters) {
 
 
 void query_self(void) {
+#if DEBUG_ASCII
 	fprintf(STREAM_WORLD,"# query_self( query.function=%lu, query.start_address=%lu, query.n_words=%u)\r\n",
 		query.function,
 		query.start_address,
 		query.n_words
 	);
+#endif
 
 	query.resultLength=0;
 

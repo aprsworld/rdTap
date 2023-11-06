@@ -1,4 +1,4 @@
-#define DEBUG_ASCII 1
+#define DEBUG_ASCII 0
 #define MCP3208_ENABLED 0
 
 
@@ -386,7 +386,10 @@ void main(void) {
 
 			/* act on flag set by SBDRING in UART character processor or RING ALERT line */
 			if ( sbd.ring_flag ) {
+#if DEBUG_ASCII
 				fprintf(STREAM_WORLD,"# sbd.ring_flag=1\r\n");
+#endif
+
 				sbd.ring_flag=0;
 			}
 #if 0
@@ -402,7 +405,10 @@ void main(void) {
 				get a message. But wait until MO sending is done (state machine idle).
 				*/
 
+#if DEBUG_ASCII
 				fprintf(STREAM_WORLD,"# sbd.sbdix_response='%s'\r\n",sbd.sbdix_response);
+#endif
+
  				iridium_sbdix_parse();
 
 				/* clear the unparsed buffer so we don't get back here */
@@ -429,7 +435,9 @@ void main(void) {
 			}
 
 			if ( 1 == sbd.mt_ready ) {
+#if DEBUG_ASCII
 				fprintf(STREAM_WORLD,"# mt message received!\r\n");
+#endif
 				/* TODO: send to message parser */
 				sbd.mt_ready=0;
 			} 
@@ -448,9 +456,16 @@ void main(void) {
 
 		/* queries are messages send to us that we respond to */
 		if ( query.buff_ready ) {
+#if DEBUG_ASCII
 			fprintf(STREAM_WORLD,"# starting query_process()\r\n");
+#endif
+
 			query_process();
+
+#if DEBUG_ASCII
 			fprintf(STREAM_WORLD,"# starting query_reset()\r\n");
+#endif
+	
 			query_reset();
 
 		}

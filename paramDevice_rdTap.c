@@ -18,7 +18,9 @@ void write_default_device_file(void) {
 	/* green LED for 1.5 seconds */
 	timers.led_on_green=150;
 
+#if DEBUG_ASCII
 	fprintf(STREAM_WORLD,"# disabling all devices\r\n");
+#endif
 
 	/* disable all devices */
 	for ( i=0 ; i<DEV_MAX_N ; i++ ) {
@@ -85,7 +87,9 @@ void write_default_device_file(void) {
 	device[2].nRegisters=32;
 #endif
 
+#if DEBUG_ASCII
 	fprintf(STREAM_WORLD,"# write_device_file()\r\n");
+#endif
 
 	write_device_file();
 }
@@ -95,15 +99,20 @@ void read_device_file() {
 
 	crc = EEPROMDataRead(DEVICE_ADDRESS,(void *)&device, sizeof(device)); 
 
+#if DEBUG_ASCII
 	fprintf(STREAM_WORLD,"# read_device_file crc=%u\r\n",crc);
+#endif
 
 	if ( crc != read_eeprom(DEVICE_CRC_ADDRESS) ) {
+#if DEBUG_ASCII
 		fprintf(STREAM_WORLD,"# read_device_file CRC mis-match. Writing new default!\r\n");
+#endif
 		write_default_device_file();
 	}
 }
 
 void devicesDump(void) {
+#if DEBUG_ASCII
 	int8 i;
 
 	fprintf(STREAM_WORLD,"# dumping all enabled devices:\r\n");
@@ -128,4 +137,5 @@ void devicesDump(void) {
 		fprintf(STREAM_WORLD,"\tnRegisters=%u\r\n",device[i].nRegisters);
 	}
 	fprintf(STREAM_WORLD,"# done\r\n");
+#endif
 }
