@@ -1,5 +1,7 @@
-#define DEBUG_ASCII 0
+#define DEBUG_ASCII     0
+#define DEBUG_SBD       1
 #define MCP3208_ENABLED 0
+#define STARTUP_BLINKS  50
 
 
 #include "rdTap.h"
@@ -21,8 +23,8 @@ typedef struct {
 	int8  now_poll;
 	int8  world_timeout;
 	int8  factory_unlocked;
-
 	int8  led_on_green;
+	int16 sbd_cycle;
 } struct_timer;
 
 
@@ -95,7 +97,6 @@ struct_config config;
 void deviceQuery(void) {
 	static int16 measurementNumber=0;
 	static int8  nCycles[DEV_MAX_N];
-	static int16 sbdCycle=0;
 	int8 n;
 	int16 l;
 #if DEBUG_ASCII
@@ -103,14 +104,20 @@ void deviceQuery(void) {
 #endif
 
 	/* check if next cycle will be an SBD transmission. */
-	if ( 1 == sbdCycle ) {
+	if ( 1 == timers.sbd_cycle ) {
 		/* next cycle will be an Iridium transmit cycle, so turn on modem and clear outgoing buffer */
+#if DEBUG_SBD
+		fprintf(STREAM_WORLD,"# deviceQuery() next cycle will be SBD transmit cycle.\r\n");
+#endif
 //		iridium_on();
 		iridium_mo_clear();
 	}
 
 	/* check if we are going to be doing a SBD transmision */
-	if ( 0 == sbdCycle ) {
+	if ( 0 == timers.sbd_cycle ) {
+#if DEBUG_SBD
+		fprintf(STREAM_WORLD,"# deviceQuery() this cycle is an SBD transmit cycle.\r\n");
+#endif
 		/* turn on modem in case it isn't already on */
 //		iridium_on();
 		/* clear MO buffer */
@@ -121,8 +128,10 @@ void deviceQuery(void) {
 		sbd.mo_buff[sbd.mo_length++]=make8(measurementNumber,0);
 	}
 
+#if DEBUG_ASCII
+		fprintf(STREAM_WORLD,"# deviceQuery() querying all enabled devices:\r\n");
+#endif
 
-//	fprintf(world,"# querying all enabled devices:\r\n");
 	for ( n=0 ; n<DEV_MAX_N ; n++ ) {
 		restart_wdt();
 		timers.led_on_green=100;
@@ -144,21 +153,17 @@ void deviceQuery(void) {
 		qbuff.measurementNumber=measurementNumber;
 
 
-
-
-
-
 		if ( device[n].type <= DEV_TYPE_MODBUS_MAX ) {
 			/* modbus device type */
-
-
+#if DEBUG_ASCII
+			fprintf(STREAM_WORLD,"# deviceQuery() MODBUS device\r\n");
+#endif
 			/* set serial port speed */
 			if ( DEV_SERIAL_19200 == device[n].serialSpeed ) {
 				set_uart_speed(19200,MODBUS_SERIAL);
 			} else {
 				set_uart_speed(9600,MODBUS_SERIAL);
 			}
-
 
 			if ( DEV_TYPE_MODBUS_3 == device[n].type || DEV_TYPE_MODBUS_4 == device[n].type ) {
 				/* Modbus read input or holding registers */
@@ -195,7 +200,8 @@ void deviceQuery(void) {
 			/* I2C device */
 
 #if DEBUG_ASCII
-			fprintf(STREAM_WORLD,"# i2c device to query\r\n");
+			restart_wdt();
+			fprintf(STREAM_WORLD,"# deviceQuery() I2C device\r\n");
 			fprintf(STREAM_WORLD,"device[%u]\r\n",n);
 			fprintf(STREAM_WORLD,"\ttype=%u\r\n",device[n].type);
 			fprintf(STREAM_WORLD,"\ttransmitEvery=%u\r\n",device[n].transmitEvery);
@@ -212,13 +218,15 @@ void deviceQuery(void) {
 
 			if ( DEV_TYPE_I2C_READ_8 == device[n].type ) {
 				/* start a read at start address then just read a byte at a time. nRegisters is bytes */
+//fprintf(STREAM_WORLD,"z");
 				i2c_buff_read(device[n].networkAddress, device[n].startRegister, qbuff.rResult, device[n].nRegisters);
 
 				qbuff.rException=0;
 				qbuff.rResultLength=device[n].nRegisters;
-
+//fprintf(STREAM_WORLD,"Z");
 #if DEBUG_ASCII
 				/* debug dump */
+				restart_wdt();
 				for ( i=0 ; i<device[n].nRegisters ; i++ ) {
 					fprintf(STREAM_WORLD,"# reg addr[0x%02x]=0x%02x (%u)\r\n",i+device[n].startRegister,qbuff.rResult[i],qbuff.rResult[i]);
 				}
@@ -231,12 +239,15 @@ void deviceQuery(void) {
 		} else {
 			/* local */
 #if DEBUG_ASCII
-			fprintf(STREAM_WORLD,"# local device to query\r\n");
+			fprintf(STREAM_WORLD,"# deviceQuery() local (not implemented) device\r\n");
 #endif
 		}
 
 		/* Add data to SBD if this is an SBD cycle and we have valid data */
-		if ( 0 == sbdCycle && 0 == qbuff.rException ) {
+		if ( 0 == timers.sbd_cycle && 0 == qbuff.rException ) {
+#if DEBUG_SBD
+			fprintf(STREAM_WORLD,"# deviceQuery() adding to sbd.mo_buff since qbuff.rException=0\r\n");
+#endif
 			/* sub-header, 2 bytes, device number, and data length */
 			sbd.mo_buff[sbd.mo_length++]=n;
 			sbd.mo_buff[sbd.mo_length++]=qbuff.rResultLength;
@@ -250,16 +261,19 @@ void deviceQuery(void) {
 	}
 
 	/* if we have data to send, then we sent it */
-	if ( 0 == sbdCycle && sbd.mo_length > 0 ) {
+	if ( 0 == timers.sbd_cycle && sbd.mo_length > 0 ) {
+#if DEBUG_SBD
+		fprintf(STREAM_WORLD,"# deviceQuery() setting sbd.mo_state=1\r\n");
+#endif
 		sbd.mo_state=1;
 	}
 
 	measurementNumber++;
 
-	if ( 0 == sbdCycle ) {
-		sbdCycle=(config.sbd_every-1);
+	if ( 0 == timers.sbd_cycle ) {
+		timers.sbd_cycle=(config.sbd_every-1);
 	} else {
-		sbdCycle--;
+		timers.sbd_cycle--;
 	}
 }
 
@@ -292,6 +306,7 @@ void init() {
 
 	/* global structures initialized to 0, set something else below if needed */
 	timers.now_poll=1;
+	timers.sbd_cycle=1; /* next packet will be an SBD packet */
 	timers.world_timeout=255;
 	timers.factory_unlocked=0;
 	timers.led_on_green=0;
@@ -308,15 +323,14 @@ void init() {
 
 
 	if ( config.sbd_config ) {
+#if DEBUG_ASCII
+		fprintf(STREAM_WORLD,"# init() initializing I2C Uart for SBD @ 19200\r\n");
+#endif
 		/* initialize I2C UART for Iridium @ 19200 */
 		uart_init(6); /* 2=>57600 (tested, works) 6=>19200 */
 	}
 
 	delay_ms(14);
-
-
-
-
 }
 
 void main(void) {
@@ -325,23 +339,25 @@ void main(void) {
 	/* normal device startup */
 	init();
 
-	for ( i=0 ; i<150 ; i++ ) {
+#if DEBUG_ASCII
+	fprintf(STREAM_WORLD,"# main() startup blinking wait\r\n");
+#endif
+	for ( i=0 ; i<STARTUP_BLINKS ; i++ ) {
 		restart_wdt();
 
 		output_high(LED_GREEN);
 		delay_ms(100);
 		output_low(LED_GREEN);
 		delay_ms(100);
+#if DEBUG_ASCII
+		fprintf(STREAM_WORLD,"# main() blink=%u\r\n",i);
+#endif
 	}
 
+#if 1
+	fprintf(STREAM_WORLD,"# main() startup blinking done\r\n");
 
-#if DEBUG_ASCII
-	fprintf(STREAM_WORLD,"# rdTap %s (%c%lu)\r\n",
-		__DATE__,
-		config.serial_prefix,
-		config.serial_number
-	);
-
+	fprintf(STREAM_WORLD,"# rdTap %s %sr\n",__DATE__,__TIME__);
 
 	fprintf(STREAM_WORLD,"# restart cause: ");
 	switch ( restart_cause ) {
@@ -357,6 +373,7 @@ void main(void) {
 	fprintf(STREAM_WORLD,"\r\n");
 #endif
 
+	restart_wdt();
 	enable_interrupts(GLOBAL);
 
 	write_default_param_file();
@@ -365,6 +382,7 @@ void main(void) {
 	read_param_file();
 	read_device_file();
 
+	restart_wdt();
 	modbus_init();
 
 #if DEBUG_ASCII
@@ -373,9 +391,10 @@ void main(void) {
 
 	iridium_mr_clear();
 
-	/* test stub */
-//	sprintf(sbd.mo_buff,"rdTap (%c%04lu) %s %s",config.serial_prefix,config.serial_number,__DATE__,__TIME__);
-//	sbd.mo_length=strlen(sbd.mo_buff);
+#if DEBUG_ASCII
+	fprintf(STREAM_WORLD,"# main() starting for ( ; ; ) loop\r\n");
+#endif
+
 
 	/* main loop */
 	for ( ; ; ) {
@@ -386,18 +405,15 @@ void main(void) {
 
 			/* act on flag set by SBDRING in UART character processor or RING ALERT line */
 			if ( sbd.ring_flag ) {
-#if DEBUG_ASCII
-				fprintf(STREAM_WORLD,"# sbd.ring_flag=1\r\n");
+#if DEBUG_SBD
+				fprintf(STREAM_WORLD,"# main() sbd.ring_flag=1\r\n");
 #endif
+				/* our easiest way to get the ringing message is to send another message. This also
+				would help capture the results from a query */
+				timers.sbd_cycle=1; /* next packet will be an SBD packet */
 
 				sbd.ring_flag=0;
 			}
-#if 0
-			/* check if RING ALERT is active via the !CTS pin connected to RING ALERT line on the SBD modem */
-			if ( bit_test(uart_read(UART_MSR),4) ) {
-				sbd.ring_flag=1;
-			}
-#endif
 
 			if ( '\0' != sbd.sbdix_response[0] && 0 == sbd.mo_state ) {
 				/* 
@@ -405,7 +421,7 @@ void main(void) {
 				get a message. But wait until MO sending is done (state machine idle).
 				*/
 
-#if DEBUG_ASCII
+#if DEBUG_SBD
 				fprintf(STREAM_WORLD,"# sbd.sbdix_response='%s'\r\n",sbd.sbdix_response);
 #endif
 
@@ -416,6 +432,9 @@ void main(void) {
 
 				if ( sbd.sbdix_mt_queued > 0 ) {
 					/* TODO: perform another SBDIX to get the next message */
+#if DEBUG_SBD
+					fprintf(STREAM_WORLD,"# sbd.sbdix_mt_queued > 0 (is %u)\r\n",sbd.sbdix_mt_queued);
+#endif
 				}
 			}
 
@@ -426,6 +445,9 @@ void main(void) {
 
 			/* download message from SBD modem */
 			if ( 1 == sbd.sbdix_mt_status ) {
+#if DEBUG_SBD
+				fprintf(STREAM_WORLD,"# sbd.sbdix_mt_status=1\r\n");
+#endif
 				iridium_mt_receive();
 			}
 
@@ -435,39 +457,52 @@ void main(void) {
 			}
 
 			if ( 1 == sbd.mt_ready ) {
-#if DEBUG_ASCII
-				fprintf(STREAM_WORLD,"# mt message received!\r\n");
+#if DEBUG_SBD
+				fprintf(STREAM_WORLD,"# sbd.mt_ready=1\r\n");
 #endif
 				/* TODO: send to message parser */
 				sbd.mt_ready=0;
+
+				/* do another SBDIX if we have sbd.mt_queued > 0 */
+				if ( sbd.sbdix_mt_queued > 0 ) {
+					/* our easiest way to get the next message is to send another message. This also
+					would help capture the results from a query */
+					timers.sbd_cycle=1; /* next packet will be an SBD packet */
+				}
 			} 
 		}
 
 
 		if ( timers.now_poll ) {
+#if DEBUG_ASCII
+			fprintf(STREAM_WORLD,"# main() timers.now_poll\r\n");
+#endif
 			timers.now_poll=0;
 			timers.led_on_green=200;
-//			fprintf(STREAM_WORLD,"# deviceQuery() %u ...",i++);
 			deviceQuery();
-//			fprintf(STREAM_WORLD," done\r\n");
 
-
+#if DEBUG_ASCII
+			fprintf(STREAM_WORLD,"# main() timers.now_poll done\r\n");
+#endif
 		}
 
 		/* queries are messages send to us that we respond to */
 		if ( query.buff_ready ) {
 #if DEBUG_ASCII
-			fprintf(STREAM_WORLD,"# starting query_process()\r\n");
+			fprintf(STREAM_WORLD,"# main() starting query_process()\r\n");
 #endif
 
 			query_process();
 
 #if DEBUG_ASCII
-			fprintf(STREAM_WORLD,"# starting query_reset()\r\n");
+			fprintf(STREAM_WORLD,"# main() starting query_reset()\r\n");
 #endif
 	
 			query_reset();
 
+#if DEBUG_ASCII
+			fprintf(STREAM_WORLD,"# main() done with query.buff_ready()\r\n");
+#endif
 		}
 	}
 }

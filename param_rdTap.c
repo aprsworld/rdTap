@@ -42,19 +42,24 @@ void write_default_param_file() {
 //	fprintf(world,"# writing default parameters\r\n");
 
 	config.serial_prefix='A';
-	config.serial_number=4810;
+	config.serial_number=4820;
 		/* 
 			A4797 Fairway UAF (SBD in slot 5 closest to power connector)
 			A4800 Fairway UVic (SBD in slot 1)
 			A4810 Uvic Spare Fairway panel (SBD in slot 1)
+			A4820 JJJ Bench (SBD in slot 1)
 		*/
 
 	/* data to internet on STREAM_WORLD port */
-	config.live_interval=60; 
+	config.live_interval=10; 
 
 	/* Iridium SBD requires dcswc_module_rockblock which provides an I2C UART */
-	config.sbd_config=1; /* physical slot for module. Used for power control */
-	config.sbd_every=30; /* minutes. 60=once per hour, 720=once per 12 hour */
+	config.sbd_config=1;   /* physical slot for module. Used for power control */
+	config.sbd_every=90; /* send SBD message every this number of live_interval */
+                           /* with 10 second live interval, 4320 => SBD every 12 hours */
+                           /* with 10 second live interval, 1080 => SBD every 3 hours */			
+                           /* with 10 second live interval, 90 => SBD every 15 minutes */
+				
 
 	/* write them so next time we use from EEPROM */
 	write_param_file();

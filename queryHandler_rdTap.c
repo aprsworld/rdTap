@@ -147,7 +147,7 @@ exception query_self_write_register(int16 address, int16 value) {
 			/* first pass get the high word of serial number */
 			case 4: last=value; break;
 			/* second pass, combine last value and current value */
-			case 5: device[dev].serialNumber=make32(last,value);
+			case 5: device[dev].serialNumber=make32(last,value); break; /* was missing a break prior to 2024-04-03 */
 			case 6: device[dev].startRegister=value; break;
 			case 7: device[dev].nRegisters=make8(value,0); break;
 		}
@@ -158,7 +158,7 @@ exception query_self_write_register(int16 address, int16 value) {
 			case 1100: config.live_interval=value; break;
 
 			case 1997:
-				reset_cpu();
+				reset_cpu(); break; /* break doesn't do anything, but makes the compiler complain less */
 			case 1998:
 				if ( 1998 != value ) return ILLEGAL_DATA_VALUE;
 				write_default_param_file();

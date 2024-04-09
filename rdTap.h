@@ -8,7 +8,8 @@
 #fuses NOPUT
 #fuses BROWNOUT
 #fuses BORV30
-#fuses WDT512
+//#fuses WDT512
+#fuses WDT1024
 #fuses NOMCLR
 #fuses STVREN
 #fuses SOSC_DIG

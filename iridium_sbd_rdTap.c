@@ -81,73 +81,73 @@ int16 a_to_uint16(int8 *s) {
 void iridium_sbdix_parse(void) {
 	int8 *p;
 
-   /*
-    * Quick check of potential validity of response:
-    * a) valid response would need to be at least 24 characters
-    * +SBDIX: 0, 25, 0, 0, 0, 0
-    * 012345678901234567890123456789
-    *           1         2
-    * b) mo_status always starts at character 8
-    * */
-   if ( strlen(sbd.sbdix_response) < 24 || ! isdigit(sbd.sbdix_response[8] ) ) {
-      /* if not a digit or too short, then we give up */
-      return;
-   }
-   sbd.sbdix_mo_status=a_to_uint8(sbd.sbdix_response+8);
+	/*
+	 * Quick check of potential validity of response:
+	 * a) valid response would need to be at least 24 characters
+	 * +SBDIX: 0, 25, 0, 0, 0, 0	
+	 * 012345678901234567890123456789
+	 *           1         2
+	 * b) mo_status always starts at character 8
+	 * */
+	if ( strlen(sbd.sbdix_response) < 24 || ! isdigit(sbd.sbdix_response[8] ) ) {
+		/* if not a digit or too short, then we give up */
+		return;
+	}
+	sbd.sbdix_mo_status=a_to_uint8(sbd.sbdix_response+8);
 
-   /* mo_msn (with preceeding space) starts after comma */
-   p = strchr(sbd.sbdix_response+9,',');
-   if ( 0 == p ) {
-      /* not found */
-      return;
-   }
-   p++; /* swallow the ',' */
-   sbd.sbdix_mo_msn=a_to_uint16(p);
+	/* mo_msn (with preceeding space) starts after comma */
+	p = strchr(sbd.sbdix_response+9,',');
+	if ( 0 == p ) {
+		/* not found */
+		return;
+	}
+	p++; /* swallow the ',' */
+	sbd.sbdix_mo_msn=a_to_uint16(p);
 
+	/* mt_status (with preceeding space) starts after comma */
+	p = strchr(p+1,',');
+	if ( 0 == p ) {
+		/* not found */
+		return;
+	}
+	p++; /* swallow the ',' */
+	sbd.sbdix_mt_status=a_to_uint8(p);
 
-   /* mt_status (with preceeding space) starts after comma */
-   p = strchr(p+1,',');
-   if ( 0 == p ) {
-      /* not found */
-      return;
-   }
-   p++; /* swallow the ',' */
-   sbd.sbdix_mt_status=a_to_uint8(p);
+	/* mt_msn (with preceeding space) starts after comma */
+	p = strchr(p+1,',');
+	if ( 0 == p ) {
+		/* not found */
+		return;
+	}
+	p++; /* swallow the ',' */
+	sbd.sbdix_mt_msn=a_to_uint16(p);
 
-   /* mt_msn (with preceeding space) starts after comma */
-   p = strchr(p+1,',');
-   if ( 0 == p ) {
-      /* not found */
-      return;
-   }
-   p++; /* swallow the ',' */
-   sbd.sbdix_mt_msn=a_to_uint16(p);
+	/* mt_length (with preceeding space) starts after comma */
+	p = strchr(p+1,',');
+	if ( 0 == p ) {
+		/* not found */
+		return;
+	}
+	p++; /* swallow the ',' */
+	sbd.sbdix_mt_length=a_to_uint16(p);
 
-   /* mt_length (with preceeding space) starts after comma */
-   p = strchr(p+1,',');
-   if ( 0 == p ) {
-      /* not found */
-      return;
-   }
-   p++; /* swallow the ',' */
-   sbd.sbdix_mt_length=a_to_uint16(p);
+	/* mt_queued (with preceeding space) starts after comma */
+	p = strchr(p+1,',');
+	if ( 0 == p ) {
+		/* not found */
+		return;
+	}
+	p++; /* swallow the ',' */
+	sbd.sbdix_mt_queued=a_to_uint8(p);
 
-   /* mt_queued (with preceeding space) starts after comma */
-   p = strchr(p+1,',');
-   if ( 0 == p ) {
-      /* not found */
-      return;
-   }
-   p++; /* swallow the ',' */
-   sbd.sbdix_mt_queued=a_to_uint8(p);
-
-#if DEBUG_ASCII
-   fprintf(STREAM_WORLD,"# sbdix_mo_status   = %d\n",sbd.sbdix_mo_status);
-   fprintf(STREAM_WORLD,"# sbdix_mo_msn      = %lu\n",sbd.sbdix_mo_msn);
-   fprintf(STREAM_WORLD,"# sbdix_mt_status   = %d\n",sbd.sbdix_mt_status);
-   fprintf(STREAM_WORLD,"# sbdix_mt_msn      = %lu\n",sbd.sbdix_mt_msn);
-   fprintf(STREAM_WORLD,"# sbdix_mt_length   = %lu\n",sbd.sbdix_mt_length);
-   fprintf(STREAM_WORLD,"# sbdix_mt_queued   = %d\n",sbd.sbdix_mt_queued);
+#if DEBUG_SBD
+	fprintf(STREAM_WORLD,"# iridium_sbdix_parse():\r\n");
+	fprintf(STREAM_WORLD,"#   sbdix_mo_status   = %d\n",sbd.sbdix_mo_status);
+	fprintf(STREAM_WORLD,"#   sbdix_mo_msn      = %lu\n",sbd.sbdix_mo_msn);
+	fprintf(STREAM_WORLD,"#   sbdix_mt_status   = %d\n",sbd.sbdix_mt_status);
+	fprintf(STREAM_WORLD,"#   sbdix_mt_msn      = %lu\n",sbd.sbdix_mt_msn);
+	fprintf(STREAM_WORLD,"#   sbdix_mt_length   = %lu\n",sbd.sbdix_mt_length);
+	fprintf(STREAM_WORLD,"#   sbdix_mt_queued   = %d\n",sbd.sbdix_mt_queued);
 #endif
 
 }
@@ -253,6 +253,10 @@ void iridium_getc(void) {
 }
 
 void iridium_ringing(void) {
+#if DEBUG_SBD
+	fprintf(STREAM_WORLD,"# iridium_ringing() sbd.ring_state=%u\r\n",sbd.ring_state);
+#endif
+
 	if ( 0 == sbd.ring_state ) {
 		/* nothing to do */
 		return;
@@ -323,6 +327,11 @@ void iridium_ringing(void) {
 void iridium_mo_send(void) {
 	int16 l;
 	int16 checksum;
+
+#if DEBUG_SBD
+//	fprintf(STREAM_WORLD,"# iridium_mo_send() sbd.mo_state=%u sbd.mo_try=%u sbd.mo_sbdix_wait=%u\r\n",sbd.mo_state,sbd.mo_try,sbd.mo_sbdix_wait);
+#endif
+
 
 	if ( 0 == sbd.mo_state ) {
 		/* nothing to do */
@@ -485,6 +494,34 @@ void iridium_mo_send(void) {
 		has been successfully transmitted. Any number above 2 indicates that the message 
 		has not been successfully transmitted.
 
+		Per rock7 website (https://docs.rockblock.rock7.com/reference/sbdix):
+		0	MO message, if any, transferred successfully.
+		1	MO message, if any, transferred successfully, but the MT message in the queue was too big to be transferred.
+		2	MO message, if any, transferred successfully, but the requested Location Update was not accepted.
+		3 .. 4	Reserved, but indicate MO session success if used.
+		5 .. 8	Reserved, but indicate MO session failure if used.
+		10	GSS reported that the call did not complete in the allowed time.
+		11	MO message queue at the GSS is full.
+		12	MO message has too many segments.
+		13	GSS reported that the session did not complete.
+		14	Invalid segment size.
+		15	Access is denied.
+		16	ISU has been locked and may not make SBD calls (see +CULK command).
+		17	Gateway not responding (local session timeout).
+		18	Connection lost (RF drop).
+		19	Link failure (A protocol error caused termination of the call).
+		20 .. 31	Reserved, but indicate failure if used.
+		32	No network service, unable to initiate call.
+		33	Antenna fault, unable to initiate call.
+		34	Radio is disabled, unable to initiate call (see *Rn command).
+		35	ISU is busy, unable to initiate call.
+		36	Try later, must wait 3 minutes since last registration.
+		37	SBD service is temporarily disabled.
+		38	Try later, traffic management period (see +SBDLOE command)
+		39 .. 63	Reserved, but indicate failure if used.
+		64	Band violation (attempt to transmit outside permitted frequency band).
+		65	PLL lock failure; hardware error during attempted transmit.
+
 		<MOMSN> - This number denotes the MO message number and cycles between 0 and 65535.
 
 		<MT status>
@@ -515,9 +552,10 @@ void iridium_mo_send(void) {
 				}
 
 
-				/* so we got an +SBDIX response. If it is 0, 1, 2 we are okay to proceed and clear
-				buffer. If it is anything else, we need to wait and try again */
-				if ( ' '==sbd.mr_buff[7] && ( sbd.mr_buff[8] >= '0' && sbd.mr_buff[8] <= '2' ) ) {
+				/* so we got an +SBDIX response. If first byte ([8]) is '0', '1', '2' and second byte ([9]) is ',' 
+				we are okay to proceed and clear buffer. If it is anything else, we need to wait and try again */
+				/* TODO: white space location / pading may not be consistent. Use atoi style parsing to determine MO_STATUS reliably */
+				if ( ' '==sbd.mr_buff[7] && ( sbd.mr_buff[8] >= '0' && sbd.mr_buff[8] <= '2'  && ',' == sbd.mr_buff[9]) ) {
 					sbd.mo_state++;
 					sbd.mo_try=0;
 				} else {
@@ -600,6 +638,11 @@ void iridium_mt_receive(void) {
 	int8 c;
 	static int16 l;
 	static int16 checksum;
+
+#if DEBUG_SBD
+	fprintf(STREAM_WORLD,"# iridium_mt_receive() sbd.mt_state=%u\r\n",sbd.mt_state);
+#endif
+
 
 	if ( sbd.mt_state <= 1 ) {
 		/* send 'ATE0' to turn off modem echo for subsequent commands */
@@ -728,15 +771,16 @@ void iridium_mt_receive(void) {
 		sbd.mr_disable=0;
 	} else if ( 13 == sbd.mt_State ) {
 		/* compare local and remote checksum */
-#if DEBUG_ASCII
-		fprintf(STREAM_WORLD,"# l=%lu r=%lu\r\n",checksum,l);
+#if DEBUG_SBD
+		fprintf(STREAM_WORLD,"# iridium_mt_receive() checksum l=%lu r=%lu\r\n",checksum,l);
 #endif
 
 		if ( checksum == l ) {
 			/* checksums matched, we have a good message! */
 			sbd.mt_ready=1;
 
-#if DEBUG_ASCII
+#if DEBUG_SBD
+			fprintf(STREAM_WORLD,"# iridium_mt_receive() mt_ready=1, here is our message:\r\n");
 			for ( l=0 ; l<sbd.mt_length ; l++ ) {
 				fprintf(STREAM_WORLD,"# mt_buff[%lu]=%c\r\n",l,sbd.mt_buff[l]);
 			}
@@ -749,3 +793,12 @@ void iridium_mt_receive(void) {
 	} 
 }
 
+
+
+#if 0
+			/* if not using RING ALERT through the UART, we can do this */
+			/* check if RING ALERT is active via the !CTS pin connected to RING ALERT line on the SBD modem */
+			if ( bit_test(uart_read(UART_MSR),4) ) {
+				sbd.ring_flag=1;
+			}
+#endif
