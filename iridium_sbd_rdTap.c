@@ -36,8 +36,6 @@ typedef struct {
 	int8 mr_buff[64];
 	int8 mr_length;
 	int8 mr_disable;
-//	int8 mr_receiver; /* 0 => iridum_mt_receive(), 1=> iridium_mo_send() */
-
 } struct_iridium_sbd;
 
 struct_iridium_sbd sbd={0};
@@ -205,10 +203,6 @@ void iridium_getc(void) {
 	/* read character from UART */
 	c = uart_getc();
 
-
-#if DEBUG_SBD
-	fprintf(STREAM_WORLD,"# uart_getc=%02x\r\n",c);
-#endif
 
 	if ( '\r' == c ) {
 		/* except when receiving binary data, we don't care about '\r' */
@@ -477,6 +471,9 @@ void iridium_mo_send(void) {
 		}
 
 	} else if ( 12 == sbd.mo_state ) {
+#if DEBUG_SBD
+		fprintf(STREAM_WORLD,"# iridium_mo_send() sbd.mo_state=%u start\r\n",sbd.mo_state);
+#endif
 		/* send 'AT+SBDIX' to initiate Extended SBD Session */
 
 		if ( sbd.mo_try > 0 && 0 != sbd.mo_sbdix_wait ) {
@@ -490,6 +487,9 @@ void iridium_mo_send(void) {
 		/* TODO set response timeout */
 
 	} else if ( 13 == sbd.mo_state ) {
+#if DEBUG_SBD
+	fprintf(STREAM_WORLD,"# iridium_mo_send() sbd.mo_state=%u start\r\n",sbd.mo_state);
+#endif
 		/*
 		receive response:
 			 +SBDIX: <MO status>, <MOMSN>, <MT status>, <MTMSN>, <MT length>, <MT queued>
@@ -573,6 +573,10 @@ void iridium_mo_send(void) {
 			iridium_mr_clear();				
 		}
 	} else if ( 14 == sbd.mo_state ) {
+#if DEBUG_SBD
+	fprintf(STREAM_WORLD,"# iridium_mo_send() sbd.mo_state=%u sbd.mo_try=%u start\r\n",sbd.mo_state,sbd.mo_try);
+#endif
+
 		/* receive response 'OK' */
 
 		if ( 1 == sbd.mr_ready ) {
@@ -598,6 +602,9 @@ void iridium_mo_send(void) {
 				sbd.mo_state=15;
 			}
 		}
+#if DEBUG_SBD
+	fprintf(STREAM_WORLD,"# iridium_mo_send() sbd.mo_state=%u sbd.mo_try=%u finish\r\n",sbd.mo_state,sbd.mo_try);
+#endif
 	} else if ( 15 == sbd.mo_state ) {
 
 		/* send 'AT+SBDD=0' to clear MO buffer */
@@ -607,6 +614,9 @@ void iridium_mo_send(void) {
 		/* TODO set response timeout */
 		/* TODO ... be careful about starting over without buffer being cleared */
 	} else if ( 16 == sbd.mo_state ) {
+#if DEBUG_SBD
+	fprintf(STREAM_WORLD,"# iridium_mo_send() sbd.mo_state=%u start\r\n",sbd.mo_state);
+#endif
 		if ( 1 == sbd.mr_ready ) {
 			if ( '0'==sbd.mr_buff[0] ) {
 				/* TODO BUG ... what about non-zero response */
@@ -617,8 +627,11 @@ void iridium_mo_send(void) {
 			}
 		}
 	} else if ( 17 == sbd.mo_state ) {
-		/* receive response 'OK' */
+#if DEBUG_SBD
+	fprintf(STREAM_WORLD,"# iridium_mo_send() sbd.mo_state=%u start\r\n",sbd.mo_state);
+#endif
 
+		/* receive response 'OK' */
 		if ( 1 == sbd.mr_ready ) {
 			if ( 'O'==sbd.mr_buff[0] && 'K'==sbd.mr_buff[1] ) {
 				sbd.mo_state++;
@@ -626,8 +639,11 @@ void iridium_mo_send(void) {
 		
 			iridium_mr_clear();				
 		}
-
 	} else if ( 18 == sbd.mo_state ) {
+#if DEBUG_SBD
+	fprintf(STREAM_WORLD,"# iridium_mo_send() sbd.mo_state=%u start\r\n",sbd.mo_state);
+#endif
+
 		/* done sending */
 		/* download MT if needed? */
 		/* turn off modem */
