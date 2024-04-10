@@ -1,7 +1,7 @@
 #define DEBUG_ASCII     0
-#define DEBUG_SBD       1
+#define DEBUG_SBD       0
 #define MCP3208_ENABLED 0
-#define STARTUP_BLINKS  50
+#define STARTUP_BLINKS  150
 
 
 #include "rdTap.h"
@@ -354,10 +354,10 @@ void main(void) {
 #endif
 	}
 
-#if 1
+#if DEBUG_ASCII
 	fprintf(STREAM_WORLD,"# main() startup blinking done\r\n");
 
-	fprintf(STREAM_WORLD,"# rdTap %s %sr\n",__DATE__,__TIME__);
+	fprintf(STREAM_WORLD,"# rdTap %s %s\r\n",__DATE__,__TIME__);
 
 	fprintf(STREAM_WORLD,"# restart cause: ");
 	switch ( restart_cause ) {
