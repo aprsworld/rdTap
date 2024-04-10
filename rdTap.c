@@ -431,7 +431,10 @@ void main(void) {
 				sbd.sbdix_response[0]='\0';
 
 				if ( sbd.sbdix_mt_queued > 0 ) {
-					/* TODO: perform another SBDIX to get the next message */
+					/* our easiest way to get the next message is to send another message. This also
+					would help capture the results from a query */
+					timers.sbd_cycle=1; /* next packet will be an SBD packet */
+					
 #if DEBUG_SBD
 					fprintf(STREAM_WORLD,"# sbd.sbdix_mt_queued > 0 (is %u)\r\n",sbd.sbdix_mt_queued);
 #endif
