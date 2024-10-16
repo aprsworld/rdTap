@@ -42,7 +42,7 @@ void write_default_param_file() {
 //	fprintf(world,"# writing default parameters\r\n");
 
 	config.serial_prefix='A';
-	config.serial_number=4756;
+	config.serial_number=4812;
 		/* 
 			A4797 Fairway UAF (SBD in slot 5 closest to power connector)
 			A4800 Fairway UVic (SBD in slot 1)
@@ -56,10 +56,12 @@ void write_default_param_file() {
 
 	/* Iridium SBD requires dcswc_module_rockblock which provides an I2C UART */
 	config.sbd_config=1;   /* physical slot for module. Used for power control */
-	config.sbd_every=90; /* send SBD message every this number of live_interval */
+	config.sbd_every=90;   /* send SBD message every this number of live_interval */
                            /* with 10 second live interval, 4320 => SBD every 12 hours */
-                           /* with 10 second live interval, 1080 => SBD every 3 hours */			
-                           /* with 10 second live interval, 90 => SBD every 15 minutes */
+                           /* with 10 second live interval, 1080 => SBD every 3 hours */	
+						   /* with 10 second live interval, 360  => SBD every 1 hour */			
+                           /* with 10 second live interval, 90   => SBD every 15 minutes */
+                           /* values less than 15 minutes don't work well with the SBD backoff algorithm */
 				
 
 	/* write them so next time we use from EEPROM */

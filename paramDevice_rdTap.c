@@ -147,7 +147,7 @@ void write_default_device_file(void) {
 	device[2].nRegisters=32;
 #endif
 
-#if 1
+#if 0
 	/* N Test A4756 */
 	/* dcswc_module_latching_contactor */
 	device[0].type=DEV_TYPE_I2C_READ_8;
@@ -185,6 +185,209 @@ void write_default_device_file(void) {
 	device[3].startRegister=0;
 	device[3].nRegisters=32;
 #endif
+
+#if 0
+	/* Q Test board on A4815 */
+	/* dcswc_module_latching_contactor */
+	device[0].type=DEV_TYPE_I2C_READ_8;
+	device[0].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[0].transmitEvery=1;
+	device[0].networkAddress=0x3e;
+	device[0].serialNumber=('A'<<16) + 4815; 
+	device[0].startRegister=0;
+	device[0].nRegisters=3*2; /* three two byte registers */
+#endif
+
+#if 0
+	/* Q Test board on A4816 */
+	/* dcswc_module_latching_contactor */
+	device[0].type=DEV_TYPE_I2C_READ_8;
+	device[0].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[0].transmitEvery=1;
+	device[0].networkAddress=0x3e;
+	device[0].serialNumber=('A'<<16) + 4816; 
+	device[0].startRegister=0;
+	device[0].nRegisters=3*2; /* three two byte registers */
+#endif
+
+#if 0
+	/* Q Test board on A4817 */
+	/* dcswc_module_latching_contactor */
+	device[0].type=DEV_TYPE_I2C_READ_8;
+	device[0].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[0].transmitEvery=1;
+	device[0].networkAddress=0x3e;
+	device[0].serialNumber=('A'<<16) + 4817; 
+	device[0].startRegister=0;
+	device[0].nRegisters=3*2; /* three two byte registers */
+#endif
+
+#if 0
+	/* Q Test board on A4818 */
+	/* dcswc_module_latching_contactor */
+	device[0].type=DEV_TYPE_I2C_READ_8;
+	device[0].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[0].transmitEvery=1;
+	device[0].networkAddress=0x3e;
+	device[0].serialNumber=('A'<<16) + 4818; 
+	device[0].startRegister=0;
+	device[0].nRegisters=3*2; /* three two byte registers */
+#endif
+
+#if 0
+	/* N Test A4756 */
+	/* dcswc_module_latching_contactor */
+	device[0].type=DEV_TYPE_I2C_READ_8;
+	device[0].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[0].transmitEvery=1;
+	device[0].networkAddress=0x44; /* on on */
+	device[0].serialNumber=('A'<<16) + 4821; 
+	device[0].startRegister=0;
+	device[0].nRegisters=3*2; /* three two byte registers */
+
+	/* dcswc_module_voltage_current_counter */
+	device[1].type=DEV_TYPE_I2C_READ_8;
+	device[1].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[1].transmitEvery=1;
+	device[1].networkAddress=0x36; /* off off */
+	device[1].serialNumber=('A'<<16) + 4822; 
+	device[1].startRegister=0;
+	device[1].nRegisters=32;
+
+	/* dcswc_module_voltage_current_counter */
+	device[2].type=DEV_TYPE_I2C_READ_8;
+	device[2].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[2].transmitEvery=1;
+	device[2].networkAddress=0x38; /* on off */
+	device[2].serialNumber=('A'<<16) + 4823; 
+	device[2].startRegister=0;
+	device[2].nRegisters=32;
+
+	/* dcswc_module_voltage_current_counter */
+	device[3].type=DEV_TYPE_I2C_READ_8;
+	device[3].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[3].transmitEvery=1;
+	device[3].networkAddress=0x3a; /* off /on */
+	device[3].serialNumber=('A'<<16) + 4824; 
+	device[3].startRegister=0;
+	device[3].nRegisters=32;
+#endif
+
+#if 0
+	/* N Test A4811 */
+	/* dcswc_module_latching_contactor */
+	device[0].type=DEV_TYPE_I2C_READ_8;
+	device[0].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[0].transmitEvery=1;
+	device[0].networkAddress=0x44; /* on on */
+	device[0].serialNumber=('A'<<16) + 4811; 
+	device[0].startRegister=0;
+	device[0].nRegisters=3*2; /* three two byte registers */
+
+	/* dcswc_module_voltage_current_counter */
+	device[1].type=DEV_TYPE_I2C_READ_8;
+	device[1].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[1].transmitEvery=1;
+	device[1].networkAddress=0x36; /* off off */
+	device[1].serialNumber=('A'<<16) + 4811; 
+	device[1].startRegister=0;
+	device[1].nRegisters=32;
+
+	/* dcswc_module_voltage_current_counter */
+	device[2].type=DEV_TYPE_I2C_READ_8;
+	device[2].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[2].transmitEvery=1;
+	device[2].networkAddress=0x38; /* on off */
+	device[2].serialNumber=('A'<<16) + 4811; 
+	device[2].startRegister=0;
+	device[2].nRegisters=32;
+
+	/* dcswc_module_voltage_current_counter */
+	device[3].type=DEV_TYPE_I2C_READ_8;
+	device[3].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[3].transmitEvery=1;
+	device[3].networkAddress=0x3a; /* off / on */
+	device[3].serialNumber=('A'<<16) + 4811; 
+	device[3].startRegister=0;
+	device[3].nRegisters=32;
+#endif
+
+#if 1
+	/* N Test A4812 */
+	/* dcswc_module_latching_contactor */
+	device[0].type=DEV_TYPE_I2C_READ_8;
+	device[0].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[0].transmitEvery=1;
+	device[0].networkAddress=0x44; /* on on */
+	device[0].serialNumber=('A'<<16) + 4812; 
+	device[0].startRegister=0;
+	device[0].nRegisters=3*2; /* three two byte registers */
+
+	/* dcswc_module_voltage_current_counter */
+	device[1].type=DEV_TYPE_I2C_READ_8;
+	device[1].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[1].transmitEvery=1;
+	device[1].networkAddress=0x36; /* off off */
+	device[1].serialNumber=('A'<<16) + 4812; 
+	device[1].startRegister=0;
+	device[1].nRegisters=32;
+
+	/* dcswc_module_voltage_current_counter */
+	device[2].type=DEV_TYPE_I2C_READ_8;
+	device[2].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[2].transmitEvery=1;
+	device[2].networkAddress=0x38; /* on off */
+	device[2].serialNumber=('A'<<16) + 4812; 
+	device[2].startRegister=0;
+	device[2].nRegisters=32;
+
+	/* dcswc_module_voltage_current_counter */
+	device[3].type=DEV_TYPE_I2C_READ_8;
+	device[3].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[3].transmitEvery=1;
+	device[3].networkAddress=0x3a; /* off / on */
+	device[3].serialNumber=('A'<<16) + 4812; 
+	device[3].startRegister=0;
+	device[3].nRegisters=32;
+#endif
+
+#if 0
+	/* N Test A4813 */
+	/* dcswc_module_latching_contactor */
+	device[0].type=DEV_TYPE_I2C_READ_8;
+	device[0].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[0].transmitEvery=1;
+	device[0].networkAddress=0x44; /* on on */
+	device[0].serialNumber=('A'<<16) + 4813; 
+	device[0].startRegister=0;
+	device[0].nRegisters=3*2; /* three two byte registers */
+#endif
+
+#if 0
+	/* N Test A4814 */
+	/* dcswc_module_latching_contactor */
+	device[0].type=DEV_TYPE_I2C_READ_8;
+	device[0].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[0].transmitEvery=1;
+	device[0].networkAddress=0x44; /* on on */
+	device[0].serialNumber=('A'<<16) + 4814; 
+	device[0].startRegister=0;
+	device[0].nRegisters=3*2; /* three two byte registers */
+#endif
+
+#if 1
+	/* N Test A4819 */
+	/* dcswc_module_latching_contactor */
+	device[0].type=DEV_TYPE_I2C_READ_8;
+	device[0].typeWorld=DEVICE_TYPE_WORLD_RSDATA;
+	device[0].transmitEvery=1;
+	device[0].networkAddress=0x44; /* on on */
+	device[0].serialNumber=('A'<<16) + 4819; 
+	device[0].startRegister=0;
+	device[0].nRegisters=3*2; /* three two byte registers */
+#endif
+
+
 
 #if DEBUG_ASCII
 	fprintf(STREAM_WORLD,"# write_device_file()\r\n");
